@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Tacos LA 26 -- Authentic Street Tacos Since 2001{% endblock %}
+
+{% block content %}
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <span class="hero-chip">Since 2001 &middot; Avenue 26</span>
+    <h1>Authentic Street<br/><em>Tacos</em> of LA</h1>
+    <p>Handcrafted on the grill, loaded with flavor, served fresh every single night.</p>
+    <div class="hero-btns">
+      <a href="{{ url_for('menu') }}" class="btn btn-fire">Start Your Order</a>
+      <a href="{{ url_for('about') }}" class="btn btn-outline">Our Story</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURED MENU ═══ -->
+<section class="section" id="featured">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-chip">Our Menu</span>
+      <h2>Build It Your Way</h2>
+      <p>Pick your item, choose your protein, load up toppings. Just like the stand.</p>
+    </div>
+    <div class="menu-grid">
+      {% for cat in menu_categories %}
+      <a href="{{ url_for('build', item_id=cat.id) }}" class="menu-card">
+        <div class="mc-img">
+          <img src="{{ cat.img }}" alt="{{ cat.name }}" loading="lazy"/>
+        </div>
+        <div class="mc-body">
+          <h3>{{ cat.name }}</h3>
+          <p>{{ cat.desc }}</p>
+          <div class="mc-footer">
+            <span class="mc-price">from ${{ "%.2f"|format(cat.base_price) }}</span>
+            <span class="mc-cta">Build Yours &rarr;</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Sides + Beverages row -->
+    <div class="extras-row">
+      <div class="extra-card">
+        <img src="{{ sides_img }}" alt="Sides" loading="lazy"/>
+        <div class="ec-info">
+          <h4>Sides</h4>
+          <p>Beans, rice, or the combo.</p>
+          <span class="mc-price">from $1.00</span>
+        </div>
+      </div>
+      <div class="extra-card">
+        <img src="{{ beverages_img }}" alt="Beverages" loading="lazy"/>
+        <div class="ec-info">
+          <h4>Beverages</h4>
+          <p>Horchata, Pineapple Agua Fresca, sodas.</p>
+          <span class="mc-price">from $2.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head light">
+      <span class="section-chip">How It Works</span>
+      <h2>Three Steps to Taco Heaven</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h4>Pick Your Item</h4>
+        <p>Tacos, burritos, quesadillas, mulitas, or quesa tacos.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h4>Choose Protein &amp; Toppings</h4>
+        <p>Select one or multiple proteins. Add all the toppings you want -- no extra charge.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h4>Checkout &amp; Enjoy</h4>
+        <p>Pick up at the stand or get it delivered. Simple.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STORY PREVIEW ═══ -->
+<section class="section">
+  <div class="container story-preview">
+    <div class="sp-text">
+      <span class="section-chip">Our Story</span>
+      <h2>One Stand. One Grill.<br/>One Goal.</h2>
+      <p>Tacos LA 26 started back in 2001 with one stand, one grill, and a goal -- make good tacos, no shortcuts. What began as a small family setup on Avenue 26 turned into something bigger when the neighborhood showed up hungry.</p>
+      <a href="{{ url_for('about') }}" class="btn btn-dark">Read More</a>
+    </div>
+    <div class="sp-img">
+      <img src="https://tacos-la26.com/wp-content/uploads/2026/02/Untitleddesign.webp" alt="Our Story" loading="lazy"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LOCATION BAR ═══ -->
+<section class="location-bar">
+  <div class="container loc-inner">
+    <div class="loc-col">
+      <h4>Find Us</h4>
+      <p>353 S Alameda St, Los Angeles, CA 90013</p>
+    </div>
+    <div class="loc-col">
+      <h4>Call Us</h4>
+      <p>+1 (323) 689-5284</p>
+    </div>
+    <div class="loc-col">
+      <h4>Open Late</h4>
+      <p>Mon-Thu &amp; Sun: 9 AM -- 4 AM<br/>Fri-Sat: 9 AM -- 5 AM</p>
+    </div>
+    <div class="loc-col">
+      <a href="{{ url_for('menu') }}" class="btn btn-fire">Order Now</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Offers -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <h1>Special Offers</h1>
+  <p>Deals and promos -- because everyone deserves more tacos.</p>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="offers-grid">
+
+      <div class="offer-card offer-fire">
+        <div class="oc-badge">Limited Time</div>
+        <h3>10% Off Your Order</h3>
+        <p>Use code <strong>TACO10</strong> at checkout.</p>
+        <button class="btn btn-sm" onclick="copyCode('TACO10')">Copy Code</button>
+      </div>
+
+      <div class="offer-card offer-gold">
+        <div class="oc-badge">New Customers</div>
+        <h3>$5 Off First Order</h3>
+        <p>Use code <strong>FIRST5</strong> at checkout.</p>
+        <button class="btn btn-sm" onclick="copyCode('FIRST5')">Copy Code</button>
+      </div>
+
+      <div class="offer-card offer-green">
+        <div class="oc-badge">Lunch Special</div>
+        <h3>20% Off Before 3 PM</h3>
+        <p>Use code <strong>LUNCH20</strong> at checkout.</p>
+        <button class="btn btn-sm" onclick="copyCode('LUNCH20')">Copy Code</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% block scripts %}
+<script>
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('Coupon code ' + code + ' copied!');
+  });
+}
+</script>
+{% endblock %}
+
+{% endblock %}

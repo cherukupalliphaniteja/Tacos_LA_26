@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Cart -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="section">
+  <div class="container">
+    <h1 class="page-title">Your Cart</h1>
+
+    <!-- Empty state -->
+    <div class="cart-empty-page" id="cartEmptyPage">
+      <p>Your cart is empty.</p>
+      <a href="{{ url_for('menu') }}" class="btn btn-fire">Browse Menu</a>
+    </div>
+
+    <!-- Cart content -->
+    <div class="cart-page-layout" id="cartPageLayout" style="display:none;">
+      <div class="cart-items-col">
+        <div id="cartPageItems"></div>
+      </div>
+
+      <div class="cart-summary-col">
+        <div class="summary-card">
+          <h3>Order Summary</h3>
+
+          <!-- Coupon -->
+          <div class="coupon-row">
+            <input type="text" id="couponInput" placeholder="Coupon code" class="coupon-field"/>
+            <button class="btn btn-sm" onclick="applyCoupon()">Apply</button>
+          </div>
+          <div id="couponMsg" class="coupon-msg"></div>
+
+          <div class="summary-lines" id="summaryLines"></div>
+
+          <a href="{{ url_for('checkout') }}" class="btn btn-fire btn-block" style="margin-top:16px;">
+            Proceed to Checkout
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', renderCartPage);
+
+function renderCartPage() {
+  const cart = getCart();
+  const empty = document.getElementById('cartEmptyPage');
+  const layout = document.getElementById('cartPageLayout');
+
+  if (!cart.length) {
+    empty.style.display = 'block';
+    layout.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  layout.style.display = 'grid';
+
+  // Render items
+  const container = document.getElementById('cartPageItems');
+  container.innerHTML = cart.map((item, i) => `
+    <div class="cp-item">
+      <img src="${item.img || ''}" alt="${item.name}" class="cp-img"/>
+      <div class="cp-info">
+        <h4>${item.name}</h4>
+        ${item.proteins ? '<p class="cp-detail">Protein: ' + item.proteins.join(', ') + '</p>' : ''}
+        ${item.toppings && item.toppings.length ? '<p class="cp-detail">Toppings: ' + item.toppings.join(', ') + '</p>' : ''}
+        ${item.notes ? '<p class="cp-detail"><em>' + item.notes + '</em></p>' : ''}
+        <div class="cp-bottom">
+          <div class="cp-qty">
+            <button class="qty-btn" onclick="updateCartQty(${i}, -1)">-</button>
+            <span>${item.qty}</span>
+            <button class="qty-btn" onclick="updateCartQty(${i}, 1)">+</button>
+          </div>
+          <span class="cp-line-total">$${item.lineTotal.toFixed(2)}</span>
+          <button class="cp-remove" onclick="removeCartItem(${i})">Remove</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  renderSummary();
+}
+
+function renderSummary() {
+  const cart = getCart();
+  const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
+  const disc = parseFloat(sessionStorage.getItem('discount') || '0');
+  const total = Math.max(0, subtotal - disc);
+
+  document.getElementById('summaryLines').innerHTML = `
+    <div class="sl"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    ${disc > 0 ? '<div class="sl sl-disc"><span>Discount</span><span>-$' + disc.toFixed(2) + '</span></div>' : ''}
+    <div class="sl sl-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>
+  `;
+}
+
+function updateCartQty(idx, delta) {
+  const cart = getCart();
+  cart[idx].qty = Math.max(1, cart[idx].qty + delta);
+  cart[idx].lineTotal = cart[idx].unitPrice * cart[idx].qty;
+  saveCart(cart);
+  renderCartPage();
+  updateCartUI();
+}
+
+function removeCartItem(idx) {
+  const cart = getCart();
+  cart.splice(idx, 1);
+  saveCart(cart);
+  renderCartPage();
+  updateCartUI();
+}
+
+function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  const cart = getCart();
+  const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
+  if (!code) return;
+
+  fetch('/api/apply-coupon', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code, subtotal})
+  })
+  .then(r => r.json())
+  .then(data => {
+    const msg = document.getElementById('couponMsg');
+    if (data.success) {
+      sessionStorage.setItem('discount', data.discount);
+      sessionStorage.setItem('coupon_code', code);
+      msg.textContent = data.label + ' applied!';
+      msg.className = 'coupon-msg coupon-ok';
+    } else {
+      sessionStorage.removeItem('discount');
+      msg.textContent = data.error;
+      msg.className = 'coupon-msg coupon-err';
+    }
+    renderSummary();
+  });
+}
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}My Orders -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="section">
+  <div class="container">
+    <h1 class="page-title">My Orders</h1>
+
+    {% if orders %}
+    <div class="orders-list">
+      {% for order in orders %}
+      <div class="order-card">
+        <div class="oc-header">
+          <div>
+            <strong>Order #{{ order.id }}</strong>
+            <span class="oc-date">{{ order.created_at.strftime('%b %d, %Y at %I:%M %p') }}</span>
+          </div>
+          <span class="oc-status oc-{{ order.payment_status }}">{{ order.payment_status }}</span>
+        </div>
+        <div class="oc-body">
+          <div class="oc-detail"><span>Type:</span> <span>{{ order.order_type|capitalize }}</span></div>
+          <div class="oc-detail"><span>Subtotal:</span> <span>${{ "%.2f"|format(order.subtotal) }}</span></div>
+          {% if order.discount > 0 %}
+          <div class="oc-detail"><span>Discount:</span> <span>-${{ "%.2f"|format(order.discount) }}</span></div>
+          {% endif %}
+          {% if order.delivery_fee > 0 %}
+          <div class="oc-detail"><span>Delivery:</span> <span>${{ "%.2f"|format(order.delivery_fee) }}</span></div>
+          {% endif %}
+          <div class="oc-detail oc-total"><span>Total:</span> <span>${{ "%.2f"|format(order.total) }}</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="cart-empty-page">
+      <p>You haven't placed any orders yet.</p>
+      <a href="{{ url_for('menu') }}" class="btn btn-fire">Start Ordering</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

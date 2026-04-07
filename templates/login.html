@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Login -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+  <div class="auth-card">
+    <h1>Welcome Back</h1>
+    <p>Sign in to your account to order faster and see your order history.</p>
+    <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required/>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Your password" required/>
+      </div>
+      <button type="submit" class="btn btn-fire btn-block">Sign In</button>
+    </form>
+    <p class="auth-switch">Don't have an account? <a href="{{ url_for('signup') }}">Create one</a></p>
+  </div>
+</section>
+
+{% endblock %}

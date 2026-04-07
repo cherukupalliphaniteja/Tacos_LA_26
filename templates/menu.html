@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Menu -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="page-hero page-hero-menu">
+  <h1>Our Menu</h1>
+  <p>Pick your item and build it your way.</p>
+</section>
+
+<section class="section">
+  <div class="container">
+
+    <!-- Build-Your-Own items -->
+    <div class="section-head">
+      <span class="section-chip">Build Your Own</span>
+      <h2>Choose Your Base</h2>
+    </div>
+    <div class="menu-grid">
+      {% for cat in menu_categories %}
+      <a href="{{ url_for('build', item_id=cat.id) }}" class="menu-card">
+        <div class="mc-img">
+          <img src="{{ cat.img }}" alt="{{ cat.name }}" loading="lazy"/>
+        </div>
+        <div class="mc-body">
+          <h3>{{ cat.name }}</h3>
+          <p>{{ cat.desc }}</p>
+          <div class="mc-footer">
+            <span class="mc-price">from ${{ "%.2f"|format(cat.base_price) }}</span>
+            <span class="mc-cta">Customize &rarr;</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Sides -->
+    <div class="section-head" style="margin-top:64px;">
+      <span class="section-chip">Extras</span>
+      <h2>Sides &amp; Beverages</h2>
+    </div>
+
+    <div class="sb-grid">
+      <!-- Sides card -->
+      <div class="sb-card">
+        <img src="{{ sides_img }}" alt="Sides" loading="lazy"/>
+        <div class="sb-body">
+          <h3>Sides</h3>
+          <div class="sb-options">
+            {% for s in sides %}
+            <div class="sb-option">
+              <span>{{ s.name }}</span>
+              <div class="sb-right">
+                <span class="sb-price">${{ "%.2f"|format(s.price) }}</span>
+                <button class="btn btn-sm btn-add"
+                  onclick="addSimpleItem('{{ s.id }}', '{{ s.name }}', {{ s.price }}, 'side')">
+                  + Add
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Beverages card -->
+      <div class="sb-card">
+        <img src="{{ beverages_img }}" alt="Beverages" loading="lazy"/>
+        <div class="sb-body">
+          <h3>Beverages</h3>
+          <div class="sb-options">
+            {% for b in beverages %}
+            <div class="sb-option">
+              <span>{{ b.name }}</span>
+              <div class="sb-right">
+                <span class="sb-price">${{ "%.2f"|format(b.price) }}</span>
+                <button class="btn btn-sm btn-add"
+                  onclick="addSimpleItem('{{ b.id }}', '{{ b.name }}', {{ b.price }}, 'beverage')">
+                  + Add
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

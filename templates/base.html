@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Tacos LA 26{% endblock %}</title>
+  <link rel="icon" href="{{ logo_url }}" type="image/webp"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="{{ url_for('home') }}" class="nav-logo">
+      <img src="{{ logo_url }}" alt="Tacos LA 26" class="logo-img"/>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('menu') }}">Menu</a>
+      <a href="{{ url_for('offers') }}">Offers</a>
+      <a href="{{ url_for('about') }}">About</a>
+    </nav>
+    <div class="nav-actions">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('orders') }}" class="nav-user">{{ current_user.name.split()[0] }}</a>
+        <a href="{{ url_for('logout') }}" class="nav-link-sm">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="nav-link-sm">Login</a>
+      {% endif %}
+      <button class="cart-icon-btn" onclick="toggleCartDrawer()">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+      <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ FLASH MESSAGES ═══ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <img src="{{ logo_url }}" alt="Tacos LA 26" class="footer-logo"/>
+      <p class="footer-tagline">Authentic street tacos since 2001.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('menu') }}">Menu</a>
+      <a href="{{ url_for('offers') }}">Offers</a>
+      <a href="{{ url_for('about') }}">About Us</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <p>353 S Alameda St<br/>Los Angeles, CA 90013</p>
+      <p>+1 (323) 689-5284</p>
+      <p>customerservice@tacos-la26.com</p>
+    </div>
+    <div class="footer-col">
+      <h4>Hours</h4>
+      <p>Mon-Thu &amp; Sun<br/>9:00 AM -- 4:00 AM</p>
+      <p>Fri-Sat<br/>9:00 AM -- 5:00 AM</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    &copy; 2026 Tacos LA 26 &middot; Los Angeles, California
+  </div>
+</footer>
+
+<!-- ═══ CART DRAWER ═══ -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCartDrawer()"></div>
+<aside class="cart-drawer" id="cartDrawer">
+  <div class="cd-header">
+    <h3>Your Order</h3>
+    <button class="cd-close" onclick="toggleCartDrawer()">&times;</button>
+  </div>
+  <div class="cd-items" id="cdItems">
+    <div class="cd-empty">
+      <p>Your cart is empty.</p>
+      <a href="{{ url_for('menu') }}" class="btn btn-sm">Browse Menu</a>
+    </div>
+  </div>
+  <div class="cd-footer" id="cdFooter" style="display:none;">
+    <div class="cd-row"><span>Subtotal</span><span id="cdSubtotal">$0.00</span></div>
+    <a href="{{ url_for('cart') }}" class="btn btn-block">View Cart &amp; Checkout</a>
+  </div>
+</aside>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

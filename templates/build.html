@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Build Your {{ item.name }} -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="build-page">
+  <div class="container">
+    <a href="{{ url_for('menu') }}" class="back-link">&larr; Back to Menu</a>
+
+    <div class="build-layout">
+      <!-- Left: Image -->
+      <div class="build-img">
+        <img src="{{ item.img }}" alt="{{ item.name }}"/>
+      </div>
+
+      <!-- Right: Configurator -->
+      <div class="build-form" id="buildForm">
+        <h1>{{ item.name }}</h1>
+        <p class="build-desc">{{ item.desc }}</p>
+        <div class="build-base-price">Starting at <strong>${{ "%.2f"|format(item.base_price) }}</strong></div>
+
+        <!-- Quantity -->
+        <div class="bf-section">
+          <label class="bf-label">Quantity</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)">-</button>
+            <span class="qty-val" id="bQty">1</span>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+        </div>
+
+        {% if item.has_protein %}
+        <!-- Protein Selection (multi) -->
+        <div class="bf-section">
+          <label class="bf-label">Choose Protein(s) <span class="bf-hint">Select one or more</span></label>
+          <div class="protein-grid" id="proteinGrid">
+            {% for p in proteins %}
+            <label class="protein-chip" data-id="{{ p.id }}" data-price="{{ p.price }}">
+              <input type="checkbox" name="protein" value="{{ p.id }}" class="protein-cb"/>
+              <span class="pc-name">{{ p.name }}</span>
+              {% if p.price > 0 %}
+                <span class="pc-extra">+${{ "%.2f"|format(p.price) }}</span>
+              {% endif %}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if item.has_toppings %}
+        <!-- Toppings -->
+        <div class="bf-section">
+          <label class="bf-label">Toppings <span class="bf-hint">Free -- add as many as you want</span></label>
+          <div class="toppings-grid">
+            {% for t in toppings %}
+            <label class="topping-chip">
+              <input type="checkbox" name="topping" value="{{ t.id }}" class="topping-cb"/>
+              <span>{{ t.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Special Instructions -->
+        <div class="bf-section">
+          <label class="bf-label">Special Instructions <span class="bf-hint">Optional</span></label>
+          <textarea id="bNotes" placeholder="e.g. extra crispy, no onions..." rows="2"></textarea>
+        </div>
+
+        <!-- Price + Add to Cart -->
+        <div class="build-bottom">
+          <div class="build-total">
+            <span>Total:</span>
+            <span class="build-total-price" id="buildTotal">${{ "%.2f"|format(item.base_price) }}</span>
+          </div>
+          <button class="btn btn-fire btn-lg btn-block" onclick="addBuildToCart()">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% block scripts %}
+<script>
+(function(){
+  const BASE = {{ item.base_price }};
+  const ITEM_ID = "{{ item.id }}";
+  const ITEM_NAME = "{{ item.name }}";
+  const ITEM_IMG = "{{ item.img }}";
+  let qty = 1;
+
+  window.changeQty = function(d) {
+    qty = Math.max(1, qty + d);
+    document.getElementById('bQty').textContent = qty;
+    recalc();
+  };
+
+  function recalc() {
+    let extra = 0;
+    document.querySelectorAll('.protein-cb:checked').forEach(cb => {
+      extra += parseFloat(cb.closest('.protein-chip').dataset.price) || 0;
+    });
+    const total = (BASE + extra) * qty;
+    document.getElementById('buildTotal').textContent = '$' + total.toFixed(2);
+  }
+
+  // Recalculate on protein change
+  document.querySelectorAll('.protein-cb').forEach(cb => {
+    cb.addEventListener('change', recalc);
+  });
+
+  window.addBuildToCart = function() {
+    const proteins = [];
+    document.querySelectorAll('.protein-cb:checked').forEach(cb => {
+      const chip = cb.closest('.protein-chip');
+      proteins.push({
+        id: chip.dataset.id,
+        name: chip.querySelector('.pc-name').textContent.trim(),
+        price: parseFloat(chip.dataset.price) || 0
+      });
+    });
+
+    if (proteins.length === 0) {
+      showToast('Please select at least one protein.');
+      return;
+    }
+
+    const toppingsArr = [];
+    document.querySelectorAll('.topping-cb:checked').forEach(cb => {
+      toppingsArr.push(cb.value);
+    });
+
+    let extra = proteins.reduce((s,p) => s + p.price, 0);
+    const unitPrice = BASE + extra;
+    const notes = document.getElementById('bNotes').value.trim();
+
+    const cartItem = {
+      uid: ITEM_ID + '_' + Date.now(),
+      category: ITEM_ID,
+      name: ITEM_NAME,
+      img: ITEM_IMG,
+      proteins: proteins.map(p => p.name),
+      toppings: toppingsArr,
+      notes: notes,
+      unitPrice: unitPrice,
+      qty: qty,
+      lineTotal: unitPrice * qty,
+    };
+
+    addToCart(cartItem);
+    showToast(ITEM_NAME + ' added to cart!');
+  };
+})();
+</script>
+{% endblock %}
+
+{% endblock %}

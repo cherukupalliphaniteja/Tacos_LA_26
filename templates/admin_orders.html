@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Admin Orders -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="section">
+  <div class="container">
+    <h1 class="page-title">All Orders (Admin)</h1>
+
+    {% if orders %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Type</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td>#{{ order.id }}</td>
+            <td>
+              {% if order.customer %}
+                {{ order.customer.name }} ({{ order.customer.email }})
+              {% else %}
+                {{ order.guest_name }} ({{ order.guest_email }})
+              {% endif %}
+            </td>
+            <td>{{ order.order_type|capitalize }}</td>
+            <td>${{ "%.2f"|format(order.total) }}</td>
+            <td><span class="oc-status oc-{{ order.payment_status }}">{{ order.payment_status }}</span></td>
+            <td>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>No orders yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

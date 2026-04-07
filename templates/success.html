@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed -- Tacos LA 26{% endblock %}
+
+{% block content %}
+
+<section class="success-page">
+  <div class="success-card">
+    <div class="success-icon">&#x2705;</div>
+    <h1>Order Confirmed!</h1>
+    <p>Your order <strong>#{{ order_id }}</strong> has been placed successfully.</p>
+    <p class="success-sub">We're firing up the grill. Your food will be ready soon.</p>
+    <div class="success-actions">
+      <a href="{{ url_for('menu') }}" class="btn btn-fire">Order More</a>
+      <a href="{{ url_for('home') }}" class="btn btn-outline">Back to Home</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
