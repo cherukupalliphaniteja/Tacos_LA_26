@@ -109,7 +109,7 @@
     recalc();
   };
 
-  // Toggle protein row selection and enable/disable qty buttons
+  // Native label click toggles checkbox automatically — just react to change
   document.querySelectorAll('.protein-cb').forEach(cb => {
     cb.addEventListener('change', function() {
       const row = this.closest('.protein-row');
@@ -123,17 +123,6 @@
         btns.forEach(b => b.disabled = true);
       }
       recalc();
-    });
-  });
-
-  // Also allow clicking the whole row label to toggle
-  document.querySelectorAll('.pr-left').forEach(lbl => {
-    lbl.addEventListener('click', function(e) {
-      if (e.target.closest('.pr-qty')) return;
-      const cb = this.querySelector('.protein-cb');
-      cb.checked = !cb.checked;
-      cb.dispatchEvent(new Event('change'));
-      e.preventDefault();
     });
   });
 
