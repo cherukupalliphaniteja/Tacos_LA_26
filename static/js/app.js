@@ -5,6 +5,22 @@
 
 const CART_KEY = 'tacosla26_cart';
 
+// ── CSRF helper ───────────────────────────────────────────
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+function apiFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken':  getCsrfToken(),
+      ...(options.headers || {}),
+    },
+  });
+}
+
 // ── Cart helpers ──────────────────────────────────────────
 function getCart() {
   try {

@@ -11,7 +11,7 @@
       <!-- Left: Form -->
       <div class="checkout-form-col">
 
-        <!-- Order Type Toggle -->
+        <!-- Order Type -->
         <div class="ck-section">
           <h3>Order Type</h3>
           <div class="order-type-toggle">
@@ -31,12 +31,12 @@
             </div>
           {% else %}
             <div class="form-group">
-              <label>Full Name</label>
+              <label>Full Name *</label>
               <input type="text" id="ckName" placeholder="Your name" required/>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Email</label>
+                <label>Email *</label>
                 <input type="email" id="ckEmail" placeholder="you@example.com" required/>
               </div>
               <div class="form-group">
@@ -47,7 +47,7 @@
           {% endif %}
         </div>
 
-        <!-- Delivery Address (hidden by default) -->
+        <!-- Delivery Address -->
         <div class="ck-section" id="deliverySection" style="display:none;">
           <h3>Delivery Address</h3>
           <div class="form-group">
@@ -62,6 +62,36 @@
             <textarea id="ckInstructions" rows="2" placeholder="Anything we should know about your order?"></textarea>
           </div>
         </div>
+
+        <!-- Payment Method -->
+        <div class="ck-section">
+          <h3>Payment</h3>
+          <div class="payment-options">
+            {% if stripe_enabled %}
+            <label class="pay-opt">
+              <input type="radio" name="payment" value="stripe" id="payStripe" checked/>
+              <span class="pay-opt-card">
+                <span class="pay-icon">💳</span>
+                <span class="pay-info">
+                  <strong>Pay Online (Card)</strong>
+                  <small>Secure checkout via Stripe</small>
+                </span>
+              </span>
+            </label>
+            {% endif %}
+            <label class="pay-opt">
+              <input type="radio" name="payment" value="cash" id="payCash" {% if not stripe_enabled %}checked{% endif %}/>
+              <span class="pay-opt-card">
+                <span class="pay-icon">💵</span>
+                <span class="pay-info">
+                  <strong>Pay on Arrival</strong>
+                  <small>Cash or card at pickup/delivery</small>
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
       </div>
 
       <!-- Right: Summary -->
@@ -73,6 +103,10 @@
           <button class="btn btn-fire btn-block btn-lg" onclick="placeOrder()" id="placeOrderBtn">
             Place Order
           </button>
+          <p class="ck-secure-note">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Secure &amp; encrypted checkout
+          </p>
         </div>
       </div>
     </div>
@@ -92,77 +126,110 @@ function setOrderType(type) {
 }
 
 function renderCheckoutSummary() {
-  const cart = getCart();
-  const itemsDiv = document.getElementById('ckItems');
+  const cart      = getCart();
+  const itemsDiv  = document.getElementById('ckItems');
   itemsDiv.innerHTML = cart.map(item => `
     <div class="ck-item">
-      <span>${item.qty}x ${item.name}</span>
+      <span>${item.qty}x ${item.name}${item.proteins?.length ? ' ('+item.proteins.join(', ')+')' : ''}</span>
       <span>$${item.lineTotal.toFixed(2)}</span>
     </div>
   `).join('');
 
-  const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
-  const discount = parseFloat(sessionStorage.getItem('discount') || '0');
+  const subtotal    = cart.reduce((s, i) => s + i.lineTotal, 0);
+  const discount    = parseFloat(sessionStorage.getItem('discount') || '0');
   const deliveryFee = orderType === 'delivery' ? 2.99 : 0;
-  const total = Math.max(0, subtotal - discount) + deliveryFee;
+  const total       = Math.max(0, subtotal - discount) + deliveryFee;
 
   document.getElementById('ckSummary').innerHTML = `
     <div class="sl"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
-    ${discount > 0 ? '<div class="sl sl-disc"><span>Discount</span><span>-$' + discount.toFixed(2) + '</span></div>' : ''}
-    ${deliveryFee > 0 ? '<div class="sl"><span>Delivery</span><span>$' + deliveryFee.toFixed(2) + '</span></div>' : ''}
+    ${discount > 0 ? '<div class="sl sl-disc"><span>Discount</span><span>-$'+discount.toFixed(2)+'</span></div>' : ''}
+    ${deliveryFee > 0 ? '<div class="sl"><span>Delivery</span><span>$'+deliveryFee.toFixed(2)+'</span></div>' : ''}
     <div class="sl sl-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>
   `;
 }
 
 document.addEventListener('DOMContentLoaded', renderCheckoutSummary);
 
-function placeOrder() {
+function getPaymentMethod() {
+  const el = document.querySelector('input[name="payment"]:checked');
+  return el ? el.value : 'cash';
+}
+
+function buildPayload() {
   const cart = getCart();
-  if (!cart.length) { showToast('Cart is empty.'); return; }
-
-  const btn = document.getElementById('placeOrderBtn');
-  btn.disabled = true;
-  btn.textContent = 'Placing Order...';
-
-  const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
-  const discount = parseFloat(sessionStorage.getItem('discount') || '0');
-
-  const payload = {
-    items: cart,
-    subtotal: subtotal,
-    discount: discount,
-    order_type: orderType,
-    coupon_code: sessionStorage.getItem('coupon_code') || '',
-    name: document.getElementById('ckName')?.value || '',
-    email: document.getElementById('ckEmail')?.value || '',
-    phone: document.getElementById('ckPhone')?.value || '',
-    address: document.getElementById('ckAddress')?.value || '',
+  return {
+    items:        cart,
+    subtotal:     cart.reduce((s, i) => s + i.lineTotal, 0),
+    discount:     parseFloat(sessionStorage.getItem('discount') || '0'),
+    order_type:   orderType,
+    coupon_code:  sessionStorage.getItem('coupon_code') || '',
+    name:         document.getElementById('ckName')?.value || '',
+    email:        document.getElementById('ckEmail')?.value || '',
+    phone:        document.getElementById('ckPhone')?.value || '',
+    address:      document.getElementById('ckAddress')?.value || '',
     instructions: document.getElementById('ckInstructions')?.value || '',
   };
+}
 
-  fetch('/api/place-order', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      localStorage.removeItem('tacosla26_cart');
-      sessionStorage.removeItem('discount');
-      sessionStorage.removeItem('coupon_code');
-      window.location.href = data.redirect;
-    } else {
-      showToast(data.error || 'Something went wrong.');
-      btn.disabled = false;
-      btn.textContent = 'Place Order';
-    }
-  })
-  .catch(() => {
-    showToast('Network error. Please try again.');
-    btn.disabled = false;
-    btn.textContent = 'Place Order';
-  });
+function clearCartSession() {
+  localStorage.removeItem('tacosla26_cart');
+  sessionStorage.removeItem('discount');
+  sessionStorage.removeItem('coupon_code');
+}
+
+function placeOrder() {
+  const cart = getCart();
+  if (!cart.length) { showToast('Your cart is empty.'); return; }
+
+  const name  = document.getElementById('ckName');
+  const email = document.getElementById('ckEmail');
+  if (name && !name.value.trim()) { showToast('Please enter your name.'); name.focus(); return; }
+  if (email && !email.value.trim()) { showToast('Please enter your email.'); email.focus(); return; }
+
+  const btn     = document.getElementById('placeOrderBtn');
+  const method  = getPaymentMethod();
+  btn.disabled  = true;
+  btn.textContent = method === 'stripe' ? 'Redirecting to payment…' : 'Placing Order…';
+
+  const payload = buildPayload();
+
+  if (method === 'stripe') {
+    apiFetch('/api/checkout/stripe', {method:'POST', body: JSON.stringify(payload)})
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) {
+          clearCartSession();
+          window.location.href = data.url;
+        } else {
+          showToast(data.error || 'Payment error. Please try again.');
+          btn.disabled = false;
+          btn.textContent = 'Place Order';
+        }
+      })
+      .catch(() => {
+        showToast('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Place Order';
+      });
+  } else {
+    apiFetch('/api/place-order', {method:'POST', body: JSON.stringify(payload)})
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          clearCartSession();
+          window.location.href = data.redirect;
+        } else {
+          showToast(data.error || 'Something went wrong.');
+          btn.disabled = false;
+          btn.textContent = 'Place Order';
+        }
+      })
+      .catch(() => {
+        showToast('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Place Order';
+      });
+  }
 }
 </script>
 {% endblock %}

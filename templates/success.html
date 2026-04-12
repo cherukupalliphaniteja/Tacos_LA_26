@@ -7,8 +7,67 @@
   <div class="success-card">
     <div class="success-icon">&#x2705;</div>
     <h1>Order Confirmed!</h1>
-    <p>Your order <strong>#{{ order_id }}</strong> has been placed successfully.</p>
+    {% if order %}
+    <p>Your order <strong>#{{ order.id }}</strong> has been placed successfully.</p>
+
+    {% if order.order_type == 'delivery' %}
+    <p class="success-sub">We're preparing your food and will deliver it to you soon.</p>
+    {% else %}
+    <p class="success-sub">We're firing up the grill! Come pick up at <strong>353 S Alameda St</strong>.</p>
+    {% endif %}
+
+    <!-- Order details -->
+    <div class="success-details">
+      <div class="sd-row">
+        <span>Order Type</span>
+        <strong>{{ order.order_type | title }}</strong>
+      </div>
+      <div class="sd-row">
+        <span>Payment</span>
+        <strong>{% if order.payment_status == 'paid' %}Paid Online{% elif order.payment_status == 'cash' %}Pay on Arrival{% else %}{{ order.payment_status | title }}{% endif %}</strong>
+      </div>
+      {% if order.delivery_address %}
+      <div class="sd-row">
+        <span>Delivery To</span>
+        <strong>{{ order.delivery_address }}</strong>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Items -->
+    <div class="success-items">
+      {% for item in items %}
+      <div class="si-row">
+        <span>{{ item.qty }}x {{ item.name }}{% if item.proteins %} ({{ item.proteins | join(', ') }}){% endif %}</span>
+        <span>${{ "%.2f" | format(item.lineTotal) }}</span>
+      </div>
+      {% endfor %}
+      {% if order.discount > 0 %}
+      <div class="si-row si-disc">
+        <span>Discount</span><span>-${{ "%.2f" | format(order.discount) }}</span>
+      </div>
+      {% endif %}
+      {% if order.delivery_fee > 0 %}
+      <div class="si-row">
+        <span>Delivery Fee</span><span>${{ "%.2f" | format(order.delivery_fee) }}</span>
+      </div>
+      {% endif %}
+      <div class="si-row si-total">
+        <span>Total</span><span>${{ "%.2f" | format(order.total) }}</span>
+      </div>
+    </div>
+
+    {% if order.guest_email or (order.customer and order.customer.email) %}
+    <p class="success-email-note">
+      📧 A confirmation email has been sent to
+      <strong>{{ order.customer.email if order.customer else order.guest_email }}</strong>
+    </p>
+    {% endif %}
+
+    {% else %}
     <p class="success-sub">We're firing up the grill. Your food will be ready soon.</p>
+    {% endif %}
+
     <div class="success-actions">
       <a href="{{ url_for('menu') }}" class="btn btn-fire">Order More</a>
       <a href="{{ url_for('home') }}" class="btn btn-outline">Back to Home</a>

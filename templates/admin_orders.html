@@ -1,49 +1,435 @@
-{% extends "base.html" %}
-{% block title %}Admin Orders -- Tacos LA 26{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}"/>
+  <title>Live Orders — Tacos LA 26</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#f0ebe3;font-family:'DM Sans',sans-serif;color:#1A0F05;}
 
-{% block content %}
+    /* ── Top bar ── */
+    .top-bar{background:#1A0F05;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+    .tb-left{display:flex;align-items:center;gap:16px;}
+    .tb-logo{height:36px;}
+    .tb-title{color:#E8A317;font-size:16px;font-weight:700;letter-spacing:.5px;}
+    .tb-right{display:flex;align-items:center;gap:16px;}
+    .live-dot{width:8px;height:8px;background:#4ade80;border-radius:50%;display:inline-block;animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+    .live-label{color:#4ade80;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+    .logout-btn{color:#888;font-size:13px;text-decoration:none;padding:6px 12px;border:1px solid #333;border-radius:6px;}
+    .logout-btn:hover{color:#fff;border-color:#666;}
 
-<section class="section">
-  <div class="container">
-    <h1 class="page-title">All Orders (Admin)</h1>
+    /* ── Stats ── */
+    .stats-bar{display:flex;gap:16px;padding:20px 24px;background:#fff;border-bottom:1px solid #e8e0d8;}
+    .stat{flex:1;text-align:center;padding:16px;background:#f5f0e8;border-radius:12px;}
+    .stat-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+    .stat-val{font-size:28px;font-weight:700;color:#1A0F05;}
+    .stat-val.fire{color:#D4380D;}
+    .stat-val.green{color:#2D6A4F;}
 
-    {% if orders %}
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Customer</th>
-            <th>Type</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for order in orders %}
-          <tr>
-            <td>#{{ order.id }}</td>
-            <td>
-              {% if order.customer %}
-                {{ order.customer.name }} ({{ order.customer.email }})
-              {% else %}
-                {{ order.guest_name }} ({{ order.guest_email }})
-              {% endif %}
-            </td>
-            <td>{{ order.order_type|capitalize }}</td>
-            <td>${{ "%.2f"|format(order.total) }}</td>
-            <td><span class="oc-status oc-{{ order.payment_status }}">{{ order.payment_status }}</span></td>
-            <td>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-          </tr>
+    /* ── Notification banner ── */
+    #newOrderBanner{display:none;background:#D4380D;color:#fff;text-align:center;padding:12px;font-weight:700;font-size:15px;cursor:pointer;animation:slideDown .3s ease;}
+    @keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+
+    /* ── Filters ── */
+    .filter-bar{padding:16px 24px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border-bottom:1px solid #e8e0d8;}
+    .filter-btn{padding:7px 16px;border-radius:20px;border:2px solid #e8e0d8;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#555;transition:.15s;}
+    .filter-btn.active,.filter-btn:hover{background:#D4380D;border-color:#D4380D;color:#fff;}
+    .filter-count{background:#f0ebe3;color:#555;padding:2px 7px;border-radius:10px;font-size:11px;margin-left:4px;}
+    .filter-btn.active .filter-count{background:rgba(255,255,255,.25);color:#fff;}
+    .search-input{margin-left:auto;padding:8px 14px;border:2px solid #e8e0d8;border-radius:20px;font-size:13px;outline:none;min-width:200px;}
+    .search-input:focus{border-color:#D4380D;}
+
+    /* ── Orders grid ── */
+    .orders-wrap{padding:20px 24px;}
+    .orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+
+    /* ── Order card ── */
+    .order-card{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid transparent;transition:.2s;overflow:hidden;}
+    .order-card.new-flash{border-color:#D4380D;animation:cardFlash .6s ease;}
+    @keyframes cardFlash{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.06);}50%{box-shadow:0 0 0 4px rgba(212,56,13,.2);}}
+    .order-card[data-status="completed"]{opacity:.65;}
+    .order-card[data-status="cancelled"]{opacity:.5;}
+
+    .oc-header{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f5f0e8;}
+    .oc-id{font-size:18px;font-weight:800;color:#D4380D;}
+    .oc-time{font-size:12px;color:#aaa;margin-left:auto;}
+    .oc-type{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+    .oc-type.pickup{background:#f5f0e8;color:#555;}
+    .oc-type.delivery{background:#1A0F05;color:#E8A317;}
+
+    .oc-body{padding:12px 16px;}
+    .oc-customer{margin-bottom:10px;}
+    .oc-cname{font-size:15px;font-weight:700;color:#1A0F05;}
+    .oc-contact{font-size:12px;color:#888;margin-top:2px;}
+
+    .oc-items{margin-bottom:10px;}
+    .oc-item{font-size:13px;color:#333;padding:3px 0;border-bottom:1px dashed #f0ebe3;display:flex;justify-content:space-between;}
+    .oc-item:last-child{border-bottom:none;}
+    .oc-proteins{color:#D4380D;font-size:11px;margin-top:1px;}
+
+    .oc-notes{background:#fff9f0;border-left:3px solid #E8A317;padding:6px 10px;border-radius:0 6px 6px 0;font-size:12px;color:#555;margin-bottom:10px;font-style:italic;}
+
+    .oc-footer{padding:10px 16px;background:#f5f0e8;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .oc-total{font-size:17px;font-weight:800;color:#1A0F05;}
+    .oc-payment{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;}
+    .oc-payment.paid{background:#d1fae5;color:#065f46;}
+    .oc-payment.cash{background:#fef3c7;color:#92400e;}
+    .oc-payment.pending{background:#fee2e2;color:#991b1b;}
+
+    /* Status selector */
+    .oc-status-wrap{padding:10px 16px;border-top:1px solid #f5f0e8;display:flex;gap:6px;flex-wrap:wrap;}
+    .status-btn{padding:5px 12px;border-radius:20px;border:2px solid #e8e0d8;background:#fff;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:.15s;}
+    .status-btn:hover,.status-btn.active{color:#fff;}
+    .status-btn[data-s="received"].active{background:#3b82f6;border-color:#3b82f6;}
+    .status-btn[data-s="preparing"].active{background:#f59e0b;border-color:#f59e0b;}
+    .status-btn[data-s="ready"].active{background:#10b981;border-color:#10b981;}
+    .status-btn[data-s="completed"].active{background:#2D6A4F;border-color:#2D6A4F;}
+    .status-btn[data-s="cancelled"].active{background:#ef4444;border-color:#ef4444;}
+
+    /* ── Delivery address ── */
+    .oc-address{font-size:12px;color:#D4380D;font-weight:600;margin-top:4px;}
+
+    /* ── Empty state ── */
+    .empty-state{text-align:center;padding:80px 24px;color:#aaa;}
+    .empty-state p{font-size:18px;margin-top:12px;}
+
+    /* ── Responsive ── */
+    @media(max-width:600px){
+      .stats-bar{flex-wrap:wrap;}
+      .stat{min-width:calc(50% - 8px);}
+      .orders-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="top-bar">
+  <div class="tb-left">
+    <img src="https://tacos-la26.com/wp-content/uploads/2024/07/cropped-tacosla26logo.webp" alt="logo" class="tb-logo"/>
+    <span class="tb-title">Order Dashboard</span>
+  </div>
+  <div class="tb-right">
+    <span class="live-dot"></span>
+    <span class="live-label" id="connLabel">Live</span>
+    <a href="/admin/logout" class="logout-btn">Logout</a>
+  </div>
+</header>
+
+<!-- New order banner -->
+<div id="newOrderBanner" onclick="scrollToTop()">
+  &#x1F514; New order received! Click to view &uarr;
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-label">Today's Orders</div>
+    <div class="stat-val fire" id="statOrders">{{ stats.today_orders }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Today's Revenue</div>
+    <div class="stat-val green" id="statRevenue">${{ "%.2f"|format(stats.today_revenue) }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Active Orders</div>
+    <div class="stat-val" id="statPending">{{ stats.pending }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Total Orders</div>
+    <div class="stat-val" id="statTotal">{{ orders|length }}</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="filterOrders('all', this)">
+    All <span class="filter-count" id="fcAll">{{ orders|length }}</span>
+  </button>
+  <button class="filter-btn" onclick="filterOrders('received', this)">
+    Received <span class="filter-count" id="fcReceived">{{ orders|selectattr('status','eq','received')|list|length }}</span>
+  </button>
+  <button class="filter-btn" onclick="filterOrders('preparing', this)">
+    Preparing <span class="filter-count" id="fcPreparing">{{ orders|selectattr('status','eq','preparing')|list|length }}</span>
+  </button>
+  <button class="filter-btn" onclick="filterOrders('ready', this)">
+    Ready <span class="filter-count" id="fcReady">{{ orders|selectattr('status','eq','ready')|list|length }}</span>
+  </button>
+  <button class="filter-btn" onclick="filterOrders('completed', this)">
+    Completed
+  </button>
+  <input type="search" class="search-input" placeholder="Search order # or customer…" oninput="searchOrders(this.value)"/>
+</div>
+
+<!-- Orders grid -->
+<div class="orders-wrap">
+  <div class="orders-grid" id="ordersGrid">
+    {% for order in orders %}
+      {% set cust  = order.customer.name  if order.customer else (order.guest_name  or 'Guest') %}
+      {% set phone = order.customer.phone if order.customer else (order.guest_phone or '') %}
+      {% set email = order.customer.email if order.customer else (order.guest_email or '') %}
+      {% set items = order.items_json | fromjson %}
+      {% set pay_class = 'paid' if order.payment_status == 'paid' else ('cash' if order.payment_status == 'cash' else 'pending') %}
+      {% set pay_label = 'Paid Online' if order.payment_status == 'paid' else ('Cash' if order.payment_status == 'cash' else order.payment_status) %}
+      <div class="order-card" data-id="{{ order.id }}" data-status="{{ order.status }}" data-customer="{{ cust | lower }}">
+        <div class="oc-header">
+          <span class="oc-id">#{{ order.id }}</span>
+          <span class="oc-type {{ order.order_type }}">{{ order.order_type }}</span>
+          <span class="oc-time">{{ order.created_at.strftime('%b %d %I:%M %p') }}</span>
+        </div>
+        <div class="oc-body">
+          <div class="oc-customer">
+            <div class="oc-cname">{{ cust }}</div>
+            <div class="oc-contact">{{ phone }}{% if email %} · {{ email }}{% endif %}</div>
+            {% if order.order_type == 'delivery' and order.delivery_address %}
+            <div class="oc-address">📍 {{ order.delivery_address }}</div>
+            {% endif %}
+          </div>
+          <div class="oc-items">
+            {% for item in items %}
+            <div class="oc-item">
+              <div>
+                <span>{{ item.qty }}x {{ item.name }}</span>
+                {% if item.proteins %}
+                <div class="oc-proteins">{{ item.proteins | join(', ') }}</div>
+                {% endif %}
+              </div>
+              <span>${{ "%.2f" | format(item.lineTotal) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% if order.special_instructions %}
+          <div class="oc-notes">⚠ {{ order.special_instructions }}</div>
+          {% endif %}
+        </div>
+        <div class="oc-footer">
+          <span class="oc-total">${{ "%.2f" | format(order.total) }}</span>
+          <span class="oc-payment {{ pay_class }}">{{ pay_label }}</span>
+        </div>
+        <div class="oc-status-wrap">
+          {% for s in ['received','preparing','ready','completed','cancelled'] %}
+          <button class="status-btn{% if order.status == s %} active{% endif %}"
+                  data-s="{{ s }}" onclick="setStatus({{ order.id }},'{{ s }}',this)">{{ s }}</button>
           {% endfor %}
-        </tbody>
-      </table>
+        </div>
+      </div>
+    {% endfor %}
+    {% if not orders %}
+    <div class="empty-state" id="emptyState">
+      <p style="font-size:48px;">🌮</p>
+      <p>No orders yet. They'll appear here in real time.</p>
     </div>
-    {% else %}
-    <p>No orders yet.</p>
     {% endif %}
   </div>
-</section>
+</div>
 
-{% endblock %}
+<!-- Notification sound (base64 short beep) -->
+<audio id="notifSound" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhS0pkm7Ksln1hTVJwpMGzl3BbUGGMucmnfGRTXICvx6mBaFZcgLHIqYFoVlyAscipgWhWXICxyKmBaFZcgLHIqYFoVlyAscipgWhWXICxyKmBaFZcgLHIqYFoVlyAscipgWhWXICxyKmBaFZcgLHIqYFoVlyAscipgWhWXICxyKmBaFZcgLHIqYFoVlyAscipgWhWXICxyKk=" type="audio/wav"/>
+</audio>
+
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+let currentFilter = 'all';
+let lastOrderId   = {{ last_order_id }};
+let todayOrders   = {{ stats.today_orders }};
+let todayRevenue  = {{ stats.today_revenue }};
+let pendingCount  = {{ stats.pending }};
+let totalCount    = {{ orders|length }};
+
+// ── Order card HTML builder ──────────────────────────────
+function buildOrderCard(o) {
+  const statusBtns = ['received','preparing','ready','completed','cancelled'].map(s =>
+    `<button class="status-btn${o.status===s?' active':''}" data-s="${s}"
+       onclick="setStatus(${o.id},'${s}',this)">${s}</button>`
+  ).join('');
+
+  const itemsHtml = (o.items || []).map(item => `
+    <div class="oc-item">
+      <div>
+        <span>${item.qty}x ${item.name}</span>
+        ${item.proteins?.length ? `<div class="oc-proteins">${item.proteins.join(', ')}</div>` : ''}
+      </div>
+      <span>$${(item.lineTotal||0).toFixed(2)}</span>
+    </div>`).join('');
+
+  const payClass = o.payment === 'paid' ? 'paid' : o.payment === 'cash' ? 'cash' : 'pending';
+  const payLabel = o.payment === 'paid' ? 'Paid Online' : o.payment === 'cash' ? 'Cash' : o.payment;
+
+  return `
+  <div class="order-card" data-id="${o.id}" data-status="${o.status}" data-customer="${(o.customer||'').toLowerCase()}" data-date="${o.date||''}">
+    <div class="oc-header">
+      <span class="oc-id">#${o.id}</span>
+      <span class="oc-type ${o.order_type}">${o.order_type}</span>
+      <span class="oc-time">${o.date||''} ${o.time||''}</span>
+    </div>
+    <div class="oc-body">
+      <div class="oc-customer">
+        <div class="oc-cname">${o.customer}</div>
+        <div class="oc-contact">${o.phone||''} ${o.email ? '· '+o.email : ''}</div>
+        ${o.order_type==='delivery' && o.delivery_address ? `<div class="oc-address">📍 ${o.delivery_address}</div>` : ''}
+      </div>
+      <div class="oc-items">${itemsHtml}</div>
+      ${o.instructions ? `<div class="oc-notes">⚠ ${o.instructions}</div>` : ''}
+    </div>
+    <div class="oc-footer">
+      <span class="oc-total">$${(o.total||0).toFixed(2)}</span>
+      <span class="oc-payment ${payClass}">${payLabel}</span>
+    </div>
+    <div class="oc-status-wrap">${statusBtns}</div>
+  </div>`;
+}
+
+// ── Status update ────────────────────────────────────────
+function setStatus(orderId, status, btn) {
+  fetch('/api/admin/order-status', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({order_id: orderId, status: status}),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const card = document.querySelector(`.order-card[data-id="${orderId}"]`);
+      if (card) {
+        card.dataset.status = status;
+        card.querySelectorAll('.status-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.s === status);
+        });
+        if (currentFilter !== 'all' && currentFilter !== status) {
+          card.style.display = 'none';
+        }
+      }
+      updatePendingCount();
+    }
+  });
+}
+
+// ── Filtering ────────────────────────────────────────────
+function filterOrders(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.order-card').forEach(card => {
+    card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+  });
+}
+
+function searchOrders(q) {
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.order-card').forEach(card => {
+    const id   = card.dataset.id;
+    const cust = card.dataset.customer || '';
+    card.style.display = (!q || id.includes(q) || cust.includes(q)) ? '' : 'none';
+  });
+}
+
+// ── Stats ────────────────────────────────────────────────
+function updatePendingCount() {
+  const count = document.querySelectorAll('.order-card[data-status="received"],.order-card[data-status="preparing"]').length;
+  document.getElementById('statPending').textContent = count;
+}
+
+function updateFilterCounts() {
+  const all       = document.querySelectorAll('.order-card').length;
+  const received  = document.querySelectorAll('.order-card[data-status="received"]').length;
+  const preparing = document.querySelectorAll('.order-card[data-status="preparing"]').length;
+  const ready     = document.querySelectorAll('.order-card[data-status="ready"]').length;
+  document.getElementById('fcAll').textContent      = all;
+  document.getElementById('fcReceived').textContent  = received;
+  document.getElementById('fcPreparing').textContent = preparing;
+  document.getElementById('fcReady').textContent     = ready;
+  document.getElementById('statTotal').textContent   = all;
+}
+
+// ── SSE: real-time order stream ──────────────────────────
+function connectSSE() {
+  const src = new EventSource('/admin/stream?last_id=' + lastOrderId);
+
+  src.onopen = () => {
+    document.getElementById('connLabel').textContent = 'Live';
+    document.getElementById('connLabel').style.color = '#4ade80';
+  };
+
+  src.onmessage = (e) => {
+    const o = JSON.parse(e.data);
+    lastOrderId = Math.max(lastOrderId, o.id);
+
+    // Remove empty state if present
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+
+    const grid = document.getElementById('ordersGrid');
+    const html = buildOrderCard(o);
+    grid.insertAdjacentHTML('afterbegin', html);
+
+    // Flash card
+    const card = grid.querySelector(`.order-card[data-id="${o.id}"]`);
+    if (card) {
+      card.classList.add('new-flash');
+      setTimeout(() => card.classList.remove('new-flash'), 2000);
+    }
+
+    // Update stats
+    todayOrders++;
+    todayRevenue += o.total || 0;
+    document.getElementById('statOrders').textContent  = todayOrders;
+    document.getElementById('statRevenue').textContent = '$' + todayRevenue.toFixed(2);
+    updateFilterCounts();
+    updatePendingCount();
+
+    // Sound + banner
+    playNotif();
+    showBanner();
+
+    // Browser notification
+    sendBrowserNotif(o);
+  };
+
+  src.onerror = () => {
+    document.getElementById('connLabel').textContent = 'Reconnecting…';
+    document.getElementById('connLabel').style.color = '#f59e0b';
+    src.close();
+    setTimeout(connectSSE, 5000);
+  };
+}
+
+function playNotif() {
+  try { document.getElementById('notifSound').play(); } catch(e) {}
+}
+
+function showBanner() {
+  const b = document.getElementById('newOrderBanner');
+  b.style.display = 'block';
+  setTimeout(() => b.style.display = 'none', 8000);
+}
+
+function scrollToTop() {
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  document.getElementById('newOrderBanner').style.display = 'none';
+}
+
+function sendBrowserNotif(o) {
+  if (Notification.permission === 'granted') {
+    new Notification('New Order #' + o.id + ' — Tacos LA 26', {
+      body: o.customer + ' · ' + o.order_type + ' · $' + (o.total||0).toFixed(2),
+      icon: 'https://tacos-la26.com/wp-content/uploads/2024/07/cropped-tacosla26logo.webp',
+    });
+  }
+}
+
+// Request browser notification permission
+if (Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// Start SSE
+connectSSE();
+updateFilterCounts();
+</script>
+</body>
+</html>

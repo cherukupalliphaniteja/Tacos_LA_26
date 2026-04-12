@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.1);">
+
+      <!-- Alert header -->
+      <tr>
+        <td style="background:#D4380D;padding:28px 40px;text-align:center;">
+          <p style="margin:0;font-size:36px;">🔔</p>
+          <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:700;">New Order #{{ order.id }}</h1>
+          <p style="margin:6px 0 0;color:#ffd5c8;font-size:15px;">
+            {{ order.order_type | title }} &mdash; ${{ "%.2f" | format(order.total) }} &mdash; {{ order.created_at.strftime('%I:%M %p') }}
+          </p>
+        </td>
+      </tr>
+
+      <!-- Payment badge -->
+      <tr>
+        <td style="padding:16px 40px;background:#fff5f0;border-bottom:1px solid #f0e0d6;text-align:center;">
+          {% if order.payment_status == 'paid' %}
+          <span style="background:#2D6A4F;color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;">PAID ONLINE</span>
+          {% elif order.payment_status == 'cash' %}
+          <span style="background:#E8A317;color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;">CASH ON ARRIVAL</span>
+          {% else %}
+          <span style="background:#aaa;color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;">{{ order.payment_status | upper }}</span>
+          {% endif %}
+          &nbsp;&nbsp;
+          {% if order.order_type == 'delivery' %}
+          <span style="background:#1A0F05;color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;">DELIVERY</span>
+          {% else %}
+          <span style="background:#555;color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;">PICKUP</span>
+          {% endif %}
+        </td>
+      </tr>
+
+      <!-- Customer info -->
+      <tr>
+        <td style="padding:24px 40px 8px;">
+          <h3 style="margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #f0e0d6;padding-bottom:8px;">Customer</h3>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="width:50%;padding:0 8px 8px 0;">
+                <p style="margin:0;font-size:13px;color:#aaa;">Name</p>
+                <p style="margin:2px 0 0;font-size:15px;font-weight:600;color:#1A0F05;">{{ customer_name }}</p>
+              </td>
+              <td style="width:50%;padding:0 0 8px 8px;">
+                <p style="margin:0;font-size:13px;color:#aaa;">Phone</p>
+                <p style="margin:2px 0 0;font-size:15px;font-weight:600;color:#1A0F05;">{{ customer_phone or '—' }}</p>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-bottom:8px;">
+                <p style="margin:0;font-size:13px;color:#aaa;">Email</p>
+                <p style="margin:2px 0 0;font-size:15px;color:#1A0F05;">{{ customer_email or '—' }}</p>
+              </td>
+            </tr>
+            {% if order.order_type == 'delivery' and order.delivery_address %}
+            <tr>
+              <td colspan="2" style="padding-bottom:8px;">
+                <p style="margin:0;font-size:13px;color:#aaa;">Delivery Address</p>
+                <p style="margin:2px 0 0;font-size:15px;font-weight:600;color:#D4380D;">{{ order.delivery_address }}</p>
+              </td>
+            </tr>
+            {% endif %}
+          </table>
+        </td>
+      </tr>
+
+      <!-- Items -->
+      <tr>
+        <td style="padding:8px 40px 24px;">
+          <h3 style="margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #f0e0d6;padding-bottom:8px;">Items Ordered</h3>
+          {% for item in items %}
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed #f0e0d6;">
+            <tr>
+              <td>
+                <p style="margin:0;font-size:15px;font-weight:700;color:#1A0F05;">{{ item.qty }}x {{ item.name }}</p>
+                {% if item.proteins %}
+                <p style="margin:3px 0 0;font-size:14px;color:#D4380D;font-weight:600;">&#x1F969; {{ item.proteins | join(', ') }}</p>
+                {% endif %}
+                {% if item.toppings %}
+                <p style="margin:2px 0 0;font-size:13px;color:#666;">+ {{ item.toppings | join(', ') }}</p>
+                {% endif %}
+                {% if item.notes %}
+                <p style="margin:4px 0 0;font-size:13px;color:#E8A317;font-style:italic;">&#x26A0; {{ item.notes }}</p>
+                {% endif %}
+              </td>
+              <td style="text-align:right;vertical-align:top;white-space:nowrap;font-size:15px;font-weight:700;color:#1A0F05;">
+                ${{ "%.2f" | format(item.lineTotal) }}
+              </td>
+            </tr>
+          </table>
+          {% endfor %}
+        </td>
+      </tr>
+
+      <!-- Totals -->
+      <tr>
+        <td style="padding:0 40px 24px;">
+          <table width="100%" cellpadding="4" cellspacing="0" style="background:#f5f0e8;border-radius:8px;padding:16px;">
+            <tr><td style="font-size:14px;color:#555;">Subtotal</td><td style="text-align:right;font-size:14px;color:#555;">${{ "%.2f" | format(order.subtotal) }}</td></tr>
+            {% if order.discount > 0 %}
+            <tr><td style="font-size:14px;color:#2D6A4F;">Discount</td><td style="text-align:right;font-size:14px;color:#2D6A4F;">-${{ "%.2f" | format(order.discount) }}</td></tr>
+            {% endif %}
+            {% if order.delivery_fee > 0 %}
+            <tr><td style="font-size:14px;color:#555;">Delivery Fee</td><td style="text-align:right;font-size:14px;color:#555;">${{ "%.2f" | format(order.delivery_fee) }}</td></tr>
+            {% endif %}
+            <tr style="border-top:2px solid #ddd;">
+              <td style="font-size:18px;font-weight:700;color:#1A0F05;padding-top:8px;">TOTAL</td>
+              <td style="text-align:right;font-size:20px;font-weight:700;color:#D4380D;padding-top:8px;">${{ "%.2f" | format(order.total) }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      {% if order.special_instructions %}
+      <tr>
+        <td style="padding:0 40px 24px;">
+          <div style="background:#fff9f0;border:2px solid #E8A317;border-radius:8px;padding:14px;">
+            <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#E8A317;">&#x26A0; SPECIAL INSTRUCTIONS</p>
+            <p style="margin:0;font-size:14px;color:#1A0F05;">{{ order.special_instructions }}</p>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
+      <!-- Footer -->
+      <tr>
+        <td style="background:#1A0F05;padding:20px 40px;text-align:center;">
+          <p style="margin:0;color:#E8A317;font-size:14px;font-weight:700;">Tacos LA 26 — Internal Order Alert</p>
+          <p style="margin:6px 0 0;color:#555;font-size:12px;">Received {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

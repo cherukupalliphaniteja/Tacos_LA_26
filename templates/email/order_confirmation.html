@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+      <!-- Header -->
+      <tr>
+        <td style="background:#D4380D;padding:32px 40px;text-align:center;">
+          <img src="https://tacos-la26.com/wp-content/uploads/2024/07/cropped-tacosla26logo.webp"
+               alt="Tacos LA 26" height="60" style="display:block;margin:0 auto 12px;"/>
+          <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Order Confirmed!</h1>
+          <p style="margin:8px 0 0;color:#ffd5c8;font-size:15px;">We're firing up the grill right now.</p>
+        </td>
+      </tr>
+
+      <!-- Order info bar -->
+      <tr>
+        <td style="background:#fff5f0;padding:20px 40px;border-bottom:1px solid #f0e0d6;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="text-align:left;">
+                <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Order Number</p>
+                <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#D4380D;">#{{ order.id }}</p>
+              </td>
+              <td style="text-align:center;">
+                <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Type</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:600;color:#1A0F05;">{{ order.order_type | title }}</p>
+              </td>
+              <td style="text-align:right;">
+                <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Date</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:600;color:#1A0F05;">{{ order.created_at.strftime('%b %d, %Y') }}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Greeting -->
+      <tr>
+        <td style="padding:32px 40px 16px;">
+          <p style="margin:0;font-size:16px;color:#1A0F05;">Hi <strong>{{ customer_name }}</strong>,</p>
+          <p style="margin:12px 0 0;font-size:15px;color:#555;line-height:1.6;">
+            Your order has been received and is being prepared with care.
+            {% if order.order_type == 'delivery' %}
+            We'll deliver it to you as fast as we can!
+            {% else %}
+            Come pick it up at <strong>353 S Alameda St, Los Angeles, CA 90013</strong>.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+
+      <!-- Items -->
+      <tr>
+        <td style="padding:0 40px 24px;">
+          <h3 style="margin:0 0 16px;font-size:16px;color:#1A0F05;border-bottom:2px solid #f0e0d6;padding-bottom:8px;">Your Order</h3>
+          {% for item in items %}
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+            <tr>
+              <td style="vertical-align:top;padding-right:12px;">
+                <p style="margin:0;font-size:15px;font-weight:600;color:#1A0F05;">
+                  {{ item.qty }}x {{ item.name }}
+                </p>
+                {% if item.proteins %}
+                <p style="margin:3px 0 0;font-size:13px;color:#666;">
+                  {{ item.proteins | join(', ') }}
+                </p>
+                {% endif %}
+                {% if item.toppings %}
+                <p style="margin:2px 0 0;font-size:12px;color:#999;">
+                  {{ item.toppings | join(', ') }}
+                </p>
+                {% endif %}
+                {% if item.notes %}
+                <p style="margin:2px 0 0;font-size:12px;color:#D4380D;font-style:italic;">Note: {{ item.notes }}</p>
+                {% endif %}
+              </td>
+              <td style="text-align:right;vertical-align:top;white-space:nowrap;">
+                <p style="margin:0;font-size:15px;font-weight:600;color:#1A0F05;">${{ "%.2f" | format(item.lineTotal) }}</p>
+              </td>
+            </tr>
+          </table>
+          {% endfor %}
+        </td>
+      </tr>
+
+      <!-- Totals -->
+      <tr>
+        <td style="padding:0 40px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f0e0d6;padding-top:16px;">
+            <tr><td style="padding:4px 0;font-size:14px;color:#555;">Subtotal</td><td style="text-align:right;font-size:14px;color:#555;">${{ "%.2f" | format(order.subtotal) }}</td></tr>
+            {% if order.discount > 0 %}
+            <tr><td style="padding:4px 0;font-size:14px;color:#2D6A4F;">Discount</td><td style="text-align:right;font-size:14px;color:#2D6A4F;">-${{ "%.2f" | format(order.discount) }}</td></tr>
+            {% endif %}
+            {% if order.delivery_fee > 0 %}
+            <tr><td style="padding:4px 0;font-size:14px;color:#555;">Delivery Fee</td><td style="text-align:right;font-size:14px;color:#555;">${{ "%.2f" | format(order.delivery_fee) }}</td></tr>
+            {% endif %}
+            <tr>
+              <td style="padding:12px 0 4px;font-size:18px;font-weight:700;color:#1A0F05;border-top:2px solid #f0e0d6;">Total</td>
+              <td style="text-align:right;padding:12px 0 4px;font-size:18px;font-weight:700;color:#D4380D;border-top:2px solid #f0e0d6;">${{ "%.2f" | format(order.total) }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      {% if order.delivery_address %}
+      <!-- Delivery address -->
+      <tr>
+        <td style="padding:0 40px 24px;">
+          <div style="background:#f5f0e8;border-radius:8px;padding:16px;">
+            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Delivery Address</p>
+            <p style="margin:0;font-size:15px;color:#1A0F05;">{{ order.delivery_address }}</p>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
+      {% if order.special_instructions %}
+      <tr>
+        <td style="padding:0 40px 24px;">
+          <div style="background:#fff9f0;border-left:3px solid #E8A317;padding:12px 16px;border-radius:0 8px 8px 0;">
+            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E8A317;">Special Instructions</p>
+            <p style="margin:0;font-size:14px;color:#555;">{{ order.special_instructions }}</p>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
+      <!-- Footer -->
+      <tr>
+        <td style="background:#1A0F05;padding:28px 40px;text-align:center;">
+          <p style="margin:0 0 8px;color:#E8A317;font-size:16px;font-weight:700;">Tacos LA 26</p>
+          <p style="margin:0 0 4px;color:#aaa;font-size:13px;">353 S Alameda St, Los Angeles, CA 90013</p>
+          <p style="margin:0 0 4px;color:#aaa;font-size:13px;">+1 (323) 689-5284</p>
+          <p style="margin:16px 0 0;color:#555;font-size:12px;">Questions? Reply to this email or call us.</p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
