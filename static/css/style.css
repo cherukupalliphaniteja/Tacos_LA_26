@@ -306,37 +306,50 @@ img { display: block; max-width: 100%; }
 .qty-btn:hover { background: var(--fire); color: var(--white); }
 .qty-val { font-size: 1.1rem; font-weight: 700; min-width: 20px; text-align: center; }
 
-/* Protein grid */
-.protein-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-.protein-chip {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 14px; border-radius: 14px;
-  border: 2px solid var(--border);
-  transition: all 0.2s; font-size: 0.9rem; font-weight: 600;
-  background: var(--white); min-width: 160px;
+/* Protein list (row-based with inline qty) */
+.protein-list { display: flex; flex-direction: column; gap: 8px; }
+.protein-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-radius: 12px;
+  border: 2px solid var(--border); background: var(--white);
+  transition: all 0.18s; gap: 12px;
 }
-.protein-chip:hover { border-color: var(--fire); }
-.protein-chip:has(input:checked) {
-  background: #fff5f0; border-color: var(--fire);
+.protein-row:hover { border-color: var(--fire); background: #fffaf8; }
+.protein-row.selected { border-color: var(--fire); background: #fff3ee; }
+.pr-left {
+  display: flex; align-items: center; gap: 12px;
+  flex: 1; cursor: pointer; user-select: none;
 }
-.pc-check-row {
-  display: flex; align-items: center; gap: 8px; cursor: pointer;
+.pr-left input[type="checkbox"] { display: none; }
+.pr-check-box {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid var(--border); background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
 }
-.pc-check-row input[type="checkbox"] { accent-color: var(--fire); width: 16px; height: 16px; cursor: pointer; }
-.pc-extra { font-size: 0.75rem; opacity: 0.7; margin-left: auto; }
-.pc-qty-row {
+.protein-row.selected .pr-check-box {
+  background: var(--fire); border-color: var(--fire);
+}
+.pr-check-icon { width: 14px; height: 14px; opacity: 0; transition: opacity 0.15s; }
+.protein-row.selected .pr-check-icon { opacity: 1; }
+.pr-name { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+.pr-extra { font-size: 0.75rem; color: var(--fire); font-weight: 600; margin-left: 4px; }
+.pr-qty {
   display: flex; align-items: center; gap: 8px;
   background: var(--cream-dark); border-radius: var(--radius-full);
-  padding: 4px 8px; align-self: flex-start;
+  padding: 4px 6px; flex-shrink: 0;
 }
-.pc-qty-btn {
-  width: 26px; height: 26px; border-radius: 50%; border: none;
-  background: var(--white); font-size: 1rem; font-weight: 700;
+.pr-qty-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  font-size: 1.1rem; font-weight: 700; line-height: 1;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.15s;
+  background: var(--white); color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
-.pc-qty-btn:hover { background: var(--fire); color: var(--white); }
-.pc-qty-val { font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align: center; }
+.pr-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+.pr-qty-btn:not(:disabled):hover { background: var(--fire); color: var(--white); }
+.pr-qty-val { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; color: var(--text); }
 
 /* Toppings */
 .toppings-grid { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -542,6 +555,8 @@ img { display: block; max-width: 100%; }
 .cd-item-info { flex: 1; }
 .cd-item-info h4 { font-size: 0.9rem; margin-bottom: 2px; }
 .cd-item-info p { font-size: 0.8rem; color: var(--text-light); }
+.cd-item-desc { font-size: 0.82rem; color: var(--text-light); line-height: 1.4; }
+.cd-item-desc strong { color: var(--text); }
 .cd-item-price { font-weight: 700; color: var(--fire); font-size: 0.9rem; }
 .cd-footer {
   padding: 16px 24px; border-top: 1px solid var(--border);

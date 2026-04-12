@@ -84,16 +84,22 @@ function updateCartUI() {
     return;
   }
 
-  container.innerHTML = cart.map((item, i) => `
+  container.innerHTML = cart.map((item, i) => {
+    const proteinStr = item.proteins && item.proteins.length
+      ? item.proteins.join(', ')
+      : '';
+    const subtitle = proteinStr
+      ? `${item.qty}× &nbsp;<strong>${item.name}</strong> &mdash; ${proteinStr}`
+      : `${item.qty}× &nbsp;<strong>${item.name}</strong>`;
+    return `
     <div class="cd-item">
       <img src="${item.img || ''}" alt="${item.name}"/>
       <div class="cd-item-info">
-        <h4>${item.name}</h4>
-        <p>${item.qty}x &middot; ${item.proteins && item.proteins.length ? item.proteins.join(', ') : item.category}</p>
+        <p class="cd-item-desc">${subtitle}</p>
       </div>
       <span class="cd-item-price">$${item.lineTotal.toFixed(2)}</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
   if (footer) {

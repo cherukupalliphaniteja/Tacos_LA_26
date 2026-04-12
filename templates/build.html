@@ -32,21 +32,24 @@
         {% if item.has_protein %}
         <!-- Protein Selection (multi with qty) -->
         <div class="bf-section">
-          <label class="bf-label">Choose Protein(s) <span class="bf-hint">Select one or more — set qty per protein</span></label>
-          <div class="protein-grid" id="proteinGrid">
+          <label class="bf-label">Choose Protein(s) <span class="bf-hint">Tap to select &bull; set quantity per protein</span></label>
+          <div class="protein-list" id="proteinGrid">
             {% for p in proteins %}
-            <div class="protein-chip" data-id="{{ p.id }}" data-price="{{ p.price }}">
-              <label class="pc-check-row">
+            <div class="protein-row" data-id="{{ p.id }}" data-price="{{ p.price }}">
+              <label class="pr-left">
                 <input type="checkbox" name="protein" value="{{ p.id }}" class="protein-cb"/>
-                <span class="pc-name">{{ p.name }}</span>
+                <span class="pr-check-box">
+                  <svg class="pr-check-icon" viewBox="0 0 16 16" fill="none"><polyline points="3,8 7,12 13,4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="pr-name">{{ p.name }}</span>
                 {% if p.price > 0 %}
-                  <span class="pc-extra">+${{ "%.2f"|format(p.price) }}/ea</span>
+                  <span class="pr-extra">+${{ "%.2f"|format(p.price) }}/ea</span>
                 {% endif %}
               </label>
-              <div class="pc-qty-row" style="display:none;">
-                <button class="pc-qty-btn" type="button" onclick="changeProteinQty(this,-1)">-</button>
-                <span class="pc-qty-val">1</span>
-                <button class="pc-qty-btn" type="button" onclick="changeProteinQty(this,1)">+</button>
+              <div class="pr-qty">
+                <button class="pr-qty-btn" type="button" onclick="changeProteinQty(this,-1)" disabled>&#8722;</button>
+                <span class="pr-qty-val">1</span>
+                <button class="pr-qty-btn" type="button" onclick="changeProteinQty(this,1)" disabled>&#43;</button>
               </div>
             </div>
             {% endfor %}
@@ -106,24 +109,38 @@
     recalc();
   };
 
-  // Show/hide protein qty row and recalc when checkbox toggled
+  // Toggle protein row selection and enable/disable qty buttons
   document.querySelectorAll('.protein-cb').forEach(cb => {
     cb.addEventListener('change', function() {
-      const chip = this.closest('.protein-chip');
-      const qtyRow = chip.querySelector('.pc-qty-row');
+      const row = this.closest('.protein-row');
+      const btns = row.querySelectorAll('.pr-qty-btn');
       if (this.checked) {
-        qtyRow.style.display = 'flex';
+        row.classList.add('selected');
+        btns.forEach(b => b.disabled = false);
       } else {
-        qtyRow.style.display = 'none';
-        chip.querySelector('.pc-qty-val').textContent = '1';
+        row.classList.remove('selected');
+        row.querySelector('.pr-qty-val').textContent = '1';
+        btns.forEach(b => b.disabled = true);
       }
       recalc();
     });
   });
 
+  // Also allow clicking the whole row label to toggle
+  document.querySelectorAll('.pr-left').forEach(lbl => {
+    lbl.addEventListener('click', function(e) {
+      if (e.target.closest('.pr-qty')) return;
+      const cb = this.querySelector('.protein-cb');
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+      e.preventDefault();
+    });
+  });
+
   window.changeProteinQty = function(btn, d) {
-    const chip = btn.closest('.protein-chip');
-    const valEl = chip.querySelector('.pc-qty-val');
+    const row = btn.closest('.protein-row');
+    if (!row.querySelector('.protein-cb').checked) return;
+    const valEl = row.querySelector('.pr-qty-val');
     const cur = parseInt(valEl.textContent) || 1;
     valEl.textContent = Math.max(1, cur + d);
     recalc();
@@ -132,9 +149,9 @@
   function recalc() {
     let extra = 0;
     document.querySelectorAll('.protein-cb:checked').forEach(cb => {
-      const chip = cb.closest('.protein-chip');
-      const pPrice = parseFloat(chip.dataset.price) || 0;
-      const pQty = parseInt(chip.querySelector('.pc-qty-val').textContent) || 1;
+      const row = cb.closest('.protein-row');
+      const pPrice = parseFloat(row.dataset.price) || 0;
+      const pQty = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
       extra += pPrice * pQty;
     });
     const total = BASE * qty + extra;
@@ -144,12 +161,12 @@
   window.addBuildToCart = function() {
     const proteins = [];
     document.querySelectorAll('.protein-cb:checked').forEach(cb => {
-      const chip = cb.closest('.protein-chip');
-      const pQty = parseInt(chip.querySelector('.pc-qty-val').textContent) || 1;
+      const row = cb.closest('.protein-row');
+      const pQty = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
       proteins.push({
-        id: chip.dataset.id,
-        name: chip.querySelector('.pc-name').textContent.trim(),
-        price: parseFloat(chip.dataset.price) || 0,
+        id: row.dataset.id,
+        name: row.querySelector('.pr-name').textContent.trim(),
+        price: parseFloat(row.dataset.price) || 0,
         qty: pQty,
       });
     });
@@ -164,13 +181,12 @@
       toppingsArr.push(cb.value);
     });
 
-    // Extra = sum of (protein_price * protein_qty)
     let extra = proteins.reduce((s, p) => s + p.price * p.qty, 0);
     const unitPrice = BASE;
     const notes = document.getElementById('bNotes').value.trim();
 
-    // Build protein label e.g. "Asada x2, Chicken x1"
-    const proteinLabels = proteins.map(p => p.qty > 1 ? p.name + ' x' + p.qty : p.name);
+    // Format: "Asada x2, Chicken x3" — always show qty for clarity
+    const proteinLabels = proteins.map(p => p.name.split(' ')[0] + ' x' + p.qty);
 
     const cartItem = {
       uid: ITEM_ID + '_' + Date.now(),
