@@ -1,4 +1,3 @@
-# Core
 Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
@@ -9,9 +8,5 @@ python-dotenv==1.0.1
 Werkzeug==3.0.4
 stripe==10.12.0
 gunicorn==22.0.0
-
-# PostgreSQL (production — requires libpq-dev on Linux; omit for SQLite dev)
 psycopg2-binary==2.9.9
-
-# Async workers for SSE streaming (production — install separately if build fails)
 gevent==24.2.1
