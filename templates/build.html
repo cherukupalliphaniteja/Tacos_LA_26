@@ -33,8 +33,9 @@
         <!-- Protein Selection -->
         <div class="bf-section">
           <label class="bf-label">Choose Protein(s)
-            <span class="bf-hint">Tap to select &bull; set qty per protein &bull; total max {{ item.max_qty }}</span>
+            <span class="bf-hint">Tap to select &bull; adjust qty per protein &bull; max {{ item.max_qty }} total</span>
           </label>
+          <p class="protein-counter" id="proteinCounter">0 of {{ item.max_qty }} selected</p>
           <div class="protein-list" id="proteinGrid">
             {% for p in proteins %}
             <div class="protein-row" data-id="{{ p.id }}" data-price="{{ p.price }}">
@@ -57,7 +58,7 @@
             {% endfor %}
           </div>
           <p id="maxQtyErr" class="max-qty-err" style="display:none;">
-            &#9888; Maximum {{ item.max_qty }} total per order reached
+            &#9888; Total exceeds maximum of {{ item.max_qty }} &mdash; reduce a protein first
           </p>
         </div>
         {% endif %}
@@ -129,8 +130,9 @@
   const ITEM_IMG  = "{{ item.img }}";
   let qty = 1;
 
-  const maxErr  = document.getElementById('maxQtyErr');
-  const addBtn  = document.getElementById('addToCartBtn');
+  const maxErr     = document.getElementById('maxQtyErr');
+  const addBtn     = document.getElementById('addToCartBtn');
+  const counterEl  = document.getElementById('proteinCounter');
 
   window.changeQty = function(d) {
     qty = Math.min(MAX_QTY, Math.max(1, qty + d));
@@ -158,18 +160,18 @@
   window.changeProteinQty = function(btn, d) {
     const row = btn.closest('.protein-row');
     if (!row.querySelector('.protein-cb').checked) return;
-    const valEl = row.querySelector('.pr-qty-val');
-    const cur   = parseInt(valEl.textContent) || 1;
+    const valEl  = row.querySelector('.pr-qty-val');
+    const cur    = parseInt(valEl.textContent) || 1;
     const newVal = Math.max(1, cur + d);
 
     if (d > 0 && HAS_PROT) {
-      // Sum all OTHER selected protein quantities
+      // Sum every OTHER checked protein's qty
       let otherTotal = 0;
       document.querySelectorAll('.protein-cb:checked').forEach(cb => {
         const r = cb.closest('.protein-row');
         if (r !== row) otherTotal += parseInt(r.querySelector('.pr-qty-val').textContent) || 1;
       });
-      if (otherTotal + newVal > MAX_QTY) return; // Block — would exceed max
+      if (otherTotal + newVal > MAX_QTY) return; // Block — this protein alone would exceed cap
     }
 
     valEl.textContent = newVal;
@@ -192,7 +194,7 @@
       const row    = cb.closest('.protein-row');
       const pPrice = parseFloat(row.dataset.price) || 0;
       const pQty   = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
-      extra          += pPrice * pQty;
+      extra           += pPrice * pQty;
       totalProteinQty += pQty;
     });
 
@@ -204,24 +206,35 @@
     document.getElementById('buildTotal').textContent = '$' + total.toFixed(2);
 
     if (HAS_PROT) {
-      const atMax = totalProteinQty >= MAX_QTY;
-      const over  = totalProteinQty > MAX_QTY;
+      const over = totalProteinQty > MAX_QTY;
 
+      // Live counter
+      if (counterEl) {
+        counterEl.textContent = totalProteinQty + ' of ' + MAX_QTY + ' selected';
+        counterEl.classList.toggle('counter-full', totalProteinQty >= MAX_QTY);
+        counterEl.classList.toggle('counter-over', over);
+      }
+
+      // Error + button state
       if (maxErr) maxErr.style.display = over ? 'block' : 'none';
-      addBtn.disabled = over;
-      addBtn.style.opacity = over ? '0.5' : '1';
+      addBtn.disabled = (totalProteinQty === 0 || over);
+      addBtn.style.opacity = (totalProteinQty === 0 || over) ? '0.5' : '1';
 
-      // Disable "+" buttons on all rows when at or over max
+      // Per-protein: disable "+" only when adding 1 MORE to THAT protein would exceed max
       document.querySelectorAll('.protein-row').forEach(pRow => {
         const checked  = pRow.querySelector('.protein-cb').checked;
+        const myQty    = parseInt(pRow.querySelector('.pr-qty-val').textContent) || 1;
         const plusBtn  = pRow.querySelectorAll('.pr-qty-btn')[1];
         const minusBtn = pRow.querySelectorAll('.pr-qty-btn')[0];
+
         if (!checked) {
           if (minusBtn) minusBtn.disabled = true;
           if (plusBtn)  plusBtn.disabled  = true;
         } else {
+          const otherTotal = totalProteinQty - myQty;
           if (minusBtn) minusBtn.disabled = false;
-          if (plusBtn)  plusBtn.disabled  = atMax; // block "+" when limit reached
+          // Disable "+" only when my current qty + others already fills the cap
+          if (plusBtn)  plusBtn.disabled  = (otherTotal + myQty >= MAX_QTY);
         }
       });
     }

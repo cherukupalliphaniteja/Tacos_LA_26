@@ -4,32 +4,32 @@
 
 :root {
   /* Brand */
-  --fire:        #D4380D;
-  --fire-dark:   #A62A08;
-  --gold:        #E8A317;
-  --gold-light:  #F5C95C;
-  --green:       #2D6A4F;
+  --fire:        #B5451B;
+  --fire-dark:   #8B3214;
+  --gold:        #C8A97E;
+  --gold-light:  #D9C4A3;
+  --green:       #7A9E7E;
 
   /* Dark surfaces */
-  --bg:          #1A0F05;
-  --surface:     #2A1A0E;
-  --surface-2:   #321A0A;
-  --nav-bg:      #0F0804;
-  --dark:        #0F0804;
-  --brown:       #3D1C00;
-  --brown-mid:   #5C3A1E;
+  --bg:          #0D0D0D;
+  --surface:     #1A1410;
+  --surface-2:   #231C16;
+  --nav-bg:      #0A0A0A;
+  --dark:        #0A0A0A;
+  --brown:       #231C16;
+  --brown-mid:   #3A2E24;
 
   /* Legacy aliases (keep for backward-compat) */
-  --cream:       #1A0F05;
-  --cream-dark:  #2A1A0E;
+  --cream:       #0D0D0D;
+  --cream-dark:  #1A1410;
   --white:       #FFFFFF;   /* pure white — button text, icons */
 
   /* Text */
-  --text:        #F5EDD8;
-  --text-light:  #A89070;
+  --text:        #F0E6D3;
+  --text-light:  #8A7560;
 
   /* UI */
-  --border:      #3D2510;
+  --border:      #2E2318;
   --shadow:      0 4px 24px rgba(0,0,0,0.55);
   --shadow-lg:   0 12px 48px rgba(0,0,0,0.75);
   --radius:      14px;
@@ -148,7 +148,7 @@ h1, h2, h3, h4 {
 .hero {
   min-height: 100vh; display: flex; align-items: center;
   position: relative; overflow: hidden;
-  background: radial-gradient(ellipse at center, #2A1A0E 0%, #1A0F05 55%, #0F0804 100%);
+  background: radial-gradient(ellipse at center, #1A1410 0%, #0D0D0D 55%, #0A0A0A 100%);
   padding: calc(var(--nav-h) + 40px) 0 60px;
 }
 .hero-overlay { display: none; } /* image overlay removed */
@@ -336,7 +336,7 @@ h1, h2, h3, h4 {
   transition: all 0.18s; gap: 12px;
 }
 .protein-row:hover { border-color: var(--fire); background: var(--surface-2); }
-.protein-row.selected { border-color: var(--fire); background: rgba(212,56,13,0.15); }
+.protein-row.selected { border-color: var(--gold); background: #2E1F0F; }
 .pr-left { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; user-select: none; }
 .pr-left input[type="checkbox"] { display: none; }
 .pr-check-box {
@@ -344,7 +344,7 @@ h1, h2, h3, h4 {
   border: 2px solid var(--border); background: var(--surface-2);
   display: flex; align-items: center; justify-content: center; transition: all 0.15s;
 }
-.protein-row.selected .pr-check-box { background: var(--fire); border-color: var(--fire); }
+.protein-row.selected .pr-check-box { background: var(--gold); border-color: var(--gold); }
 .pr-check-icon { width: 14px; height: 14px; opacity: 0; transition: opacity 0.15s; }
 .protein-row.selected .pr-check-icon { opacity: 1; }
 .pr-name { font-size: 0.92rem; font-weight: 600; color: var(--text); }
@@ -365,11 +365,19 @@ h1, h2, h3, h4 {
 .pr-qty-btn:not(:disabled):hover { background: var(--fire); color: var(--white); }
 .pr-qty-val { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; color: var(--text); }
 
+/* Protein counter */
+.protein-counter {
+  font-size: 0.8rem; font-weight: 600; color: var(--text-light);
+  margin-bottom: 10px; letter-spacing: 0.5px;
+}
+.protein-counter.counter-full { color: var(--gold); }
+.protein-counter.counter-over { color: #E05A3A; }
+
 /* Max qty error */
 .max-qty-err {
   margin-top: 10px; padding: 10px 14px; border-radius: var(--radius-sm);
-  background: rgba(212,56,13,0.18); border: 1px solid var(--fire);
-  color: #FF8A70; font-size: 0.85rem; font-weight: 600;
+  background: rgba(224,90,58,0.15); border: 1px solid #E05A3A;
+  color: #E05A3A; font-size: 0.85rem; font-weight: 600;
 }
 
 /* Toppings */
