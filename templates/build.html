@@ -30,9 +30,11 @@
         </div>
 
         {% if item.has_protein %}
-        <!-- Protein Selection (multi with qty) -->
+        <!-- Protein Selection -->
         <div class="bf-section">
-          <label class="bf-label">Choose Protein(s) <span class="bf-hint">Tap to select &bull; set quantity per protein</span></label>
+          <label class="bf-label">Choose Protein(s)
+            <span class="bf-hint">Tap to select &bull; set qty per protein &bull; total max {{ item.max_qty }}</span>
+          </label>
           <div class="protein-list" id="proteinGrid">
             {% for p in proteins %}
             <div class="protein-row" data-id="{{ p.id }}" data-price="{{ p.price }}">
@@ -54,18 +56,41 @@
             </div>
             {% endfor %}
           </div>
+          <p id="maxQtyErr" class="max-qty-err" style="display:none;">
+            &#9888; Maximum {{ item.max_qty }} total per order reached
+          </p>
         </div>
         {% endif %}
 
         {% if item.has_toppings %}
         <!-- Toppings -->
         <div class="bf-section">
-          <label class="bf-label">Toppings <span class="bf-hint">Free -- add as many as you want</span></label>
+          <label class="bf-label">Toppings <span class="bf-hint">Free — add as many as you want</span></label>
           <div class="toppings-grid">
             {% for t in toppings %}
             <label class="topping-chip">
               <input type="checkbox" name="topping" value="{{ t.id }}" class="topping-cb"/>
               <span>{{ t.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if item.extras %}
+        <!-- Extras -->
+        <div class="bf-section">
+          <label class="bf-label">Extras <span class="bf-hint">Optional add-ons</span></label>
+          <div class="extras-checks">
+            {% for e in item.extras %}
+            <label class="extra-check-row">
+              <input type="checkbox" class="extra-cb"
+                data-name="{{ e.name }}" data-price="{{ e.price }}"/>
+              <span class="extra-cb-box">
+                <svg viewBox="0 0 16 16" fill="none"><polyline points="3,8 7,12 13,4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="extra-cb-name">{{ e.name }}</span>
+              <span class="extra-cb-price">+${{ "%.2f"|format(e.price) }}</span>
             </label>
             {% endfor %}
           </div>
@@ -84,7 +109,7 @@
             <span>Total:</span>
             <span class="build-total-price" id="buildTotal">${{ "%.2f"|format(item.base_price) }}</span>
           </div>
-          <button class="btn btn-fire btn-lg btn-block" onclick="addBuildToCart()">
+          <button class="btn btn-fire btn-lg btn-block" id="addToCartBtn" onclick="addBuildToCart()">
             Add to Cart
           </button>
         </div>
@@ -96,12 +121,16 @@
 {% block scripts %}
 <script>
 (function(){
-  const BASE = {{ item.base_price }};
-  const MAX_QTY = {{ item.max_qty }};
-  const ITEM_ID = "{{ item.id }}";
+  const BASE      = {{ item.base_price }};
+  const MAX_QTY   = {{ item.max_qty }};
+  const HAS_PROT  = {{ 'true' if item.has_protein else 'false' }};
+  const ITEM_ID   = "{{ item.id }}";
   const ITEM_NAME = "{{ item.name }}";
-  const ITEM_IMG = "{{ item.img }}";
+  const ITEM_IMG  = "{{ item.img }}";
   let qty = 1;
+
+  const maxErr  = document.getElementById('maxQtyErr');
+  const addBtn  = document.getElementById('addToCartBtn');
 
   window.changeQty = function(d) {
     qty = Math.min(MAX_QTY, Math.max(1, qty + d));
@@ -109,10 +138,10 @@
     recalc();
   };
 
-  // Native label click toggles checkbox automatically — just react to change
+  // Native label click toggles checkbox — just react to change event
   document.querySelectorAll('.protein-cb').forEach(cb => {
     cb.addEventListener('change', function() {
-      const row = this.closest('.protein-row');
+      const row  = this.closest('.protein-row');
       const btns = row.querySelectorAll('.pr-qty-btn');
       if (this.checked) {
         row.classList.add('selected');
@@ -130,39 +159,64 @@
     const row = btn.closest('.protein-row');
     if (!row.querySelector('.protein-cb').checked) return;
     const valEl = row.querySelector('.pr-qty-val');
-    const cur = parseInt(valEl.textContent) || 1;
+    const cur   = parseInt(valEl.textContent) || 1;
     valEl.textContent = Math.max(1, cur + d);
     recalc();
   };
 
+  document.querySelectorAll('.extra-cb').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const row = this.closest('.extra-check-row');
+      row.classList.toggle('selected', this.checked);
+      recalc();
+    });
+  });
+
   function recalc() {
     let extra = 0;
+    let totalProteinQty = 0;
+
     document.querySelectorAll('.protein-cb:checked').forEach(cb => {
-      const row = cb.closest('.protein-row');
+      const row    = cb.closest('.protein-row');
       const pPrice = parseFloat(row.dataset.price) || 0;
-      const pQty = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
-      extra += pPrice * pQty;
+      const pQty   = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
+      extra          += pPrice * pQty;
+      totalProteinQty += pQty;
     });
+
+    document.querySelectorAll('.extra-cb:checked').forEach(cb => {
+      extra += parseFloat(cb.dataset.price) || 0;
+    });
+
     const total = BASE * qty + extra;
     document.getElementById('buildTotal').textContent = '$' + total.toFixed(2);
+
+    // Enforce max protein qty
+    if (HAS_PROT) {
+      const over = totalProteinQty > MAX_QTY;
+      if (maxErr) maxErr.style.display = over ? 'block' : 'none';
+      addBtn.disabled = over;
+      addBtn.style.opacity = over ? '0.5' : '1';
+    }
   }
 
   window.addBuildToCart = function() {
     const proteins = [];
-    document.querySelectorAll('.protein-cb:checked').forEach(cb => {
-      const row = cb.closest('.protein-row');
-      const pQty = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
-      proteins.push({
-        id: row.dataset.id,
-        name: row.querySelector('.pr-name').textContent.trim(),
-        price: parseFloat(row.dataset.price) || 0,
-        qty: pQty,
+    if (HAS_PROT) {
+      document.querySelectorAll('.protein-cb:checked').forEach(cb => {
+        const row  = cb.closest('.protein-row');
+        const pQty = parseInt(row.querySelector('.pr-qty-val').textContent) || 1;
+        proteins.push({
+          id:    row.dataset.id,
+          name:  row.querySelector('.pr-name').textContent.trim(),
+          price: parseFloat(row.dataset.price) || 0,
+          qty:   pQty,
+        });
       });
-    });
-
-    if (proteins.length === 0) {
-      showToast('Please select at least one protein.');
-      return;
+      if (proteins.length === 0) {
+        showToast('Please select at least one protein.');
+        return;
+      }
     }
 
     const toppingsArr = [];
@@ -170,24 +224,32 @@
       toppingsArr.push(cb.value);
     });
 
-    let extra = proteins.reduce((s, p) => s + p.price * p.qty, 0);
-    const unitPrice = BASE;
+    const extrasArr = [];
+    let extraCost = 0;
+    document.querySelectorAll('.extra-cb:checked').forEach(cb => {
+      const price = parseFloat(cb.dataset.price) || 0;
+      extrasArr.push(cb.dataset.name + ' +$' + price.toFixed(2));
+      extraCost += price;
+    });
+
+    let proteinCost = proteins.reduce((s, p) => s + p.price * p.qty, 0);
     const notes = document.getElementById('bNotes').value.trim();
 
-    // Format: "Asada x2, Chicken x3" — always show qty for clarity
+    // Format: "Asada x2, Chicken x3"
     const proteinLabels = proteins.map(p => p.name.split(' ')[0] + ' x' + p.qty);
 
     const cartItem = {
-      uid: ITEM_ID + '_' + Date.now(),
-      category: ITEM_ID,
-      name: ITEM_NAME,
-      img: ITEM_IMG,
-      proteins: proteinLabels,
-      toppings: toppingsArr,
-      notes: notes,
-      unitPrice: unitPrice + extra / qty,
-      qty: qty,
-      lineTotal: unitPrice * qty + extra,
+      uid:       ITEM_ID + '_' + Date.now(),
+      category:  ITEM_ID,
+      name:      ITEM_NAME,
+      img:       ITEM_IMG,
+      proteins:  proteinLabels,
+      toppings:  toppingsArr,
+      extras:    extrasArr,
+      notes:     notes,
+      unitPrice: BASE + (proteinCost + extraCost) / Math.max(qty, 1),
+      qty:       qty,
+      lineTotal: BASE * qty + proteinCost + extraCost,
     };
 
     addToCart(cartItem);

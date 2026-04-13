@@ -16,7 +16,7 @@ from datetime import datetime, date
 from config import Config
 from functools import wraps
 from sqlalchemy import text
-import json, os, stripe, threading, time, logging
+import json, os, re, stripe, threading, time, logging
 
 # ── App setup ──────────────────────────────────────────────
 app = Flask(__name__)
@@ -114,7 +114,7 @@ PROTEINS = [
     {"id": "cabeza",  "name": "Cabeza (Head)",                "price": 0},
     {"id": "pollo",   "name": "Pollo (Chicken)",              "price": 0},
     {"id": "chorizo", "name": "Chorizo (Pork Sausage)",       "price": 0},
-    {"id": "lengua",  "name": "Lengua (Tongue)",              "price": 1.00},
+    {"id": "lengua",  "name": "Lengua (Tongue)",              "price": 0},
 ]
 
 TOPPINGS = [
@@ -130,11 +130,12 @@ TOPPINGS = [
 
 MENU_CATEGORIES = [
     {
-        "id": "tacos",       "name": "Tacos",
+        "id": "tacos", "name": "Tacos",
         "desc": "Classic street tacos with your choice of protein and toppings.",
         "base_price": 2.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-7.png",
         "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 8,
+        "extras": [],
     },
     {
         "id": "quesa_tacos", "name": "Quesa Tacos",
@@ -142,27 +143,82 @@ MENU_CATEGORIES = [
         "base_price": 3.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-1.png",
         "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 4,
+        "extras": [],
     },
     {
         "id": "quesadillas", "name": "Quesadillas",
         "desc": "Melted cheese folded in a fresh tortilla with your protein.",
-        "base_price": 5.25,
+        "base_price": 10.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-5.png",
         "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 2,
+        "extras": [
+            {"id": "extra_queso",  "name": "Extra Queso (Extra Cheese)", "price": 2.00},
+            {"id": "frijol",       "name": "Frijol (Beans)",             "price": 1.00},
+            {"id": "arroz",        "name": "Arroz (Rice)",               "price": 1.00},
+            {"id": "extra_carne",  "name": "Extra Carne (Extra Meat)",   "price": 5.00},
+        ],
     },
     {
-        "id": "mulitas",     "name": "Mulitas",
-        "desc": "Double tortilla pressed with cheese and meat -- crispy perfection.",
+        "id": "mulitas", "name": "Mulitas",
+        "desc": "Double tortilla pressed with cheese and meat — crispy perfection.",
         "base_price": 6.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001.png",
         "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 4,
+        "extras": [
+            {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 1.00},
+            {"id": "frijol",      "name": "Frijol (Beans)",             "price": 1.00},
+            {"id": "arroz",       "name": "Arroz (Rice)",               "price": 1.00},
+        ],
     },
     {
-        "id": "burritos",    "name": "Burritos",
+        "id": "burritos", "name": "Burritos",
         "desc": "Oversized flour tortilla packed with rice, beans, protein, and toppings.",
         "base_price": 11.00,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-4.png",
         "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 10,
+        "extras": [
+            {"id": "queso",       "name": "Queso (Cheese)",             "price": 1.00},
+            {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 2.00},
+            {"id": "extra_carne", "name": "Extra Carne (Extra Meat)",   "price": 5.00},
+        ],
+    },
+]
+
+VEGETARIAN_ITEMS = [
+    {
+        "id": "beans_rice", "name": "B/ Beans & Rice Burrito",
+        "desc": "Vegetarian burrito with beans and rice.",
+        "base_price": 10.25,
+        "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-4.png",
+        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 10,
+        "extras": [
+            {"id": "queso",       "name": "Queso (Cheese)",             "price": 1.00},
+            {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 2.00},
+        ],
+    },
+    {
+        "id": "queso_quesadilla", "name": "Q/ Queso Quesadilla",
+        "desc": "Vegetarian quesadilla with cheese.",
+        "base_price": 9.25,
+        "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-5.png",
+        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 2,
+        "extras": [
+            {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 1.00},
+            {"id": "frijol",      "name": "Frijol (Beans)",             "price": 1.00},
+            {"id": "arroz",       "name": "Arroz (Rice)",               "price": 1.00},
+        ],
+    },
+    {
+        "id": "queso_mulita", "name": "M/ Queso Mulita",
+        "desc": "Vegetarian mulita with cheese.",
+        "base_price": 5.25,
+        "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001.png",
+        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 4,
+        "extras": [
+            {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 1.00},
+            {"id": "frijol",      "name": "Frijol (Beans)",             "price": 1.00},
+            {"id": "arroz",       "name": "Arroz (Rice)",               "price": 1.00},
+        ],
     },
 ]
 
@@ -173,12 +229,12 @@ SIDES = [
 ]
 
 BEVERAGES = [
-    {"id": "horchata",    "name": "Agua Fresca (Horchata)",  "price": 3.00},
-    {"id": "pineapple",   "name": "Agua Fresca (Pineapple)", "price": 3.00},
-    {"id": "coca_glass",  "name": "Coca Cola (Glass)",       "price": 2.50},
-    {"id": "coca_can",    "name": "Coca Cola (Can)",         "price": 2.00},
-    {"id": "fanta_glass", "name": "Orange Fanta (Glass)",    "price": 2.50},
-    {"id": "squirt_can",  "name": "Squirt (Can)",            "price": 2.00},
+    {"id": "horchata",    "name": "Agua Fresca — Horchata",    "price": 5.00},
+    {"id": "pineapple",   "name": "Agua Fresca — Pineapple",   "price": 5.00},
+    {"id": "coca_can",    "name": "Can Coke",                  "price": 2.00},
+    {"id": "squirt_can",  "name": "Can Squirt",                "price": 2.00},
+    {"id": "coca_glass",  "name": "Glass Coke",                "price": 4.00},
+    {"id": "fanta_glass", "name": "Glass Orange Fanta",        "price": 4.00},
 ]
 
 COUPONS = {
@@ -193,6 +249,7 @@ COUPONS = {
 def inject_menu():
     return dict(
         menu_categories=MENU_CATEGORIES,
+        vegetarian_items=VEGETARIAN_ITEMS,
         proteins=PROTEINS,
         toppings=TOPPINGS,
         sides=SIDES,
@@ -315,7 +372,8 @@ def menu():
 
 @app.route("/build/<item_id>")
 def build(item_id):
-    item = next((c for c in MENU_CATEGORIES if c["id"] == item_id), None)
+    all_items = MENU_CATEGORIES + VEGETARIAN_ITEMS
+    item = next((c for c in all_items if c["id"] == item_id), None)
     if not item:
         flash("Item not found.", "error")
         return redirect(url_for("menu"))
@@ -440,6 +498,18 @@ def place_order():
         items = data.get("items", [])
         if not items:
             return jsonify({"error": "Cart is empty."}), 400
+
+        # Validate protein quantities per item
+        all_cats = MENU_CATEGORIES + VEGETARIAN_ITEMS
+        for cart_item in items:
+            cat = next((c for c in all_cats if c["id"] == cart_item.get("category")), None)
+            if cat and cat.get("has_protein"):
+                total_prot = 0
+                for p_label in cart_item.get("proteins", []):
+                    m = re.search(r'x(\d+)$', p_label)
+                    total_prot += int(m.group(1)) if m else 1
+                if total_prot > cat["max_qty"]:
+                    return jsonify({"error": f"Max {cat['max_qty']} {cat['name']} per order."}), 400
 
         order = _build_order(data, payment_status="cash")
         db.session.add(order)

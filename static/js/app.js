@@ -85,17 +85,16 @@ function updateCartUI() {
   }
 
   container.innerHTML = cart.map((item, i) => {
-    const proteinStr = item.proteins && item.proteins.length
-      ? item.proteins.join(', ')
-      : '';
-    const subtitle = proteinStr
-      ? `${item.qty}× &nbsp;<strong>${item.name}</strong> &mdash; ${proteinStr}`
-      : `${item.qty}× &nbsp;<strong>${item.name}</strong>`;
+    const proteinStr = item.proteins && item.proteins.length ? item.proteins.join(', ') : '';
+    const extrasStr  = item.extras  && item.extras.length  ? item.extras.join(', ')   : '';
+    let detail = `${item.qty}&times; <strong>${item.name}</strong>`;
+    if (proteinStr) detail += ` &mdash; ${proteinStr}`;
+    if (extrasStr)  detail += `<br><span class="cd-extras">${extrasStr}</span>`;
     return `
     <div class="cd-item">
       <img src="${item.img || ''}" alt="${item.name}"/>
       <div class="cd-item-info">
-        <p class="cd-item-desc">${subtitle}</p>
+        <p class="cd-item-desc">${detail}</p>
       </div>
       <span class="cd-item-price">$${item.lineTotal.toFixed(2)}</span>
     </div>`;
