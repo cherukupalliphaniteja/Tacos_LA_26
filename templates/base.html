@@ -6,7 +6,7 @@
   <title>{% block title %}Tacos LA 26{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}"/>
   <link rel="icon" href="{{ logo_url }}" type="image/webp"/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
 </head>
 <body>
@@ -87,6 +87,15 @@
     &copy; 2026 Tacos LA 26 &middot; Los Angeles, California
   </div>
 </footer>
+
+<!-- ═══ FLOATING QUICK-NAV ═══ -->
+<nav class="quick-nav" id="quickNav">
+  <a href="{{ url_for('home') }}"  class="qn-btn" title="Home">🏠</a>
+  <a href="{{ url_for('menu') }}"  class="qn-btn" title="Menu">🌮</a>
+  <button class="qn-btn" onclick="toggleCartDrawer()" title="Cart">🛒</button>
+  <a href="{{ url_for('offers') }}" class="qn-btn" title="Offers">🎁</a>
+  <a href="{{ url_for('login') }}"  class="qn-btn" title="Account">👤</a>
+</nav>
 
 <!-- ═══ CART DRAWER ═══ -->
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCartDrawer()"></div>

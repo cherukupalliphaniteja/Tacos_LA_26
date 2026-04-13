@@ -160,7 +160,19 @@
     if (!row.querySelector('.protein-cb').checked) return;
     const valEl = row.querySelector('.pr-qty-val');
     const cur   = parseInt(valEl.textContent) || 1;
-    valEl.textContent = Math.max(1, cur + d);
+    const newVal = Math.max(1, cur + d);
+
+    if (d > 0 && HAS_PROT) {
+      // Sum all OTHER selected protein quantities
+      let otherTotal = 0;
+      document.querySelectorAll('.protein-cb:checked').forEach(cb => {
+        const r = cb.closest('.protein-row');
+        if (r !== row) otherTotal += parseInt(r.querySelector('.pr-qty-val').textContent) || 1;
+      });
+      if (otherTotal + newVal > MAX_QTY) return; // Block — would exceed max
+    }
+
+    valEl.textContent = newVal;
     recalc();
   };
 
@@ -191,12 +203,27 @@
     const total = BASE * qty + extra;
     document.getElementById('buildTotal').textContent = '$' + total.toFixed(2);
 
-    // Enforce max protein qty
     if (HAS_PROT) {
-      const over = totalProteinQty > MAX_QTY;
+      const atMax = totalProteinQty >= MAX_QTY;
+      const over  = totalProteinQty > MAX_QTY;
+
       if (maxErr) maxErr.style.display = over ? 'block' : 'none';
       addBtn.disabled = over;
       addBtn.style.opacity = over ? '0.5' : '1';
+
+      // Disable "+" buttons on all rows when at or over max
+      document.querySelectorAll('.protein-row').forEach(pRow => {
+        const checked  = pRow.querySelector('.protein-cb').checked;
+        const plusBtn  = pRow.querySelectorAll('.pr-qty-btn')[1];
+        const minusBtn = pRow.querySelectorAll('.pr-qty-btn')[0];
+        if (!checked) {
+          if (minusBtn) minusBtn.disabled = true;
+          if (plusBtn)  plusBtn.disabled  = true;
+        } else {
+          if (minusBtn) minusBtn.disabled = false;
+          if (plusBtn)  plusBtn.disabled  = atMax; // block "+" when limit reached
+        }
+      });
     }
   }
 
