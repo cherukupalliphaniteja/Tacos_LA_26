@@ -74,21 +74,45 @@
       <span class="section-chip">Extras</span>
       <h2>Sides &amp; Beverages</h2>
     </div>
-    <div class="extras-row">
-      <div class="extra-card">
+    <div class="sb-grid">
+      <div class="sb-card">
         <img src="{{ sides_img }}" alt="Sides" loading="lazy"/>
-        <div class="ec-info">
-          <h4>Sides</h4>
-          <p>Beans, rice, or the combo.</p>
-          <span class="mc-price">from $1.00</span>
+        <div class="sb-body">
+          <h3>Sides</h3>
+          <div class="sb-options">
+            {% for s in sides %}
+            <div class="sb-option">
+              <span>{{ s.name }}</span>
+              <div class="sb-right">
+                <span class="sb-price">${{ "%.2f"|format(s.price) }}</span>
+                <button class="btn btn-sm btn-add"
+                  onclick="addSimpleItem('{{ s.id }}', '{{ s.name }}', {{ s.price }}, 'side')">
+                  + Add
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
         </div>
       </div>
-      <div class="extra-card">
+      <div class="sb-card">
         <img src="{{ beverages_img }}" alt="Beverages" loading="lazy"/>
-        <div class="ec-info">
-          <h4>Beverages</h4>
-          <p>Horchata, Pineapple Agua Fresca, sodas.</p>
-          <span class="mc-price">from $2.00</span>
+        <div class="sb-body">
+          <h3>Beverages</h3>
+          <div class="sb-options">
+            {% for b in beverages %}
+            <div class="sb-option">
+              <span>{{ b.name }}</span>
+              <div class="sb-right">
+                <span class="sb-price">${{ "%.2f"|format(b.price) }}</span>
+                <button class="btn btn-sm btn-add"
+                  onclick="addSimpleItem('{{ b.id }}', '{{ b.name }}', {{ b.price }}, 'beverage')">
+                  + Add
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
