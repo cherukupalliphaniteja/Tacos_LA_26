@@ -6,8 +6,8 @@
   /* Brand */
   --fire:        #B5451B;
   --fire-dark:   #8B3214;
-  --gold:        #C8A97E;
-  --gold-light:  #D9C4A3;
+  --gold:        #FFD234;
+  --gold-light:  #FFE882;
   --green:       #7A9E7E;
 
   /* Dark surfaces */
@@ -154,7 +154,7 @@ h1, h2, h3, h4 {
 .hero-overlay { display: none; } /* image overlay removed */
 .hero-content { position: relative; z-index: 2; max-width: 640px; padding: 0 6%; }
 .hero-chip {
-  display: inline-block; background: rgba(232,163,23,0.12);
+  display: inline-block; background: rgba(255,210,52,0.12);
   color: var(--gold); padding: 6px 20px; border-radius: var(--radius-full);
   font-size: 0.82rem; font-weight: 600; letter-spacing: 2px;
   text-transform: uppercase; margin-bottom: 24px;
@@ -402,7 +402,7 @@ h1, h2, h3, h4 {
   cursor: pointer; transition: all 0.15s; user-select: none;
 }
 .extra-check-row:hover { border-color: var(--gold); }
-.extra-check-row.selected { border-color: var(--gold); background: rgba(232,163,23,0.12); }
+.extra-check-row.selected { border-color: var(--gold); background: rgba(255,210,52,0.12); }
 .extra-check-row input[type="checkbox"] { display: none; }
 .extra-cb-box {
   width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
@@ -616,7 +616,7 @@ h1, h2, h3, h4 {
   overflow: hidden; color: var(--white);
 }
 .offer-fire { background: linear-gradient(135deg, var(--fire), var(--fire-dark)); }
-.offer-gold { background: linear-gradient(135deg, var(--gold), #C4850F); }
+.offer-gold { background: linear-gradient(135deg, var(--gold), #CC9A00); }
 .offer-green { background: linear-gradient(135deg, var(--green), #1B4332); }
 .oc-badge {
   display: inline-block; background: rgba(255,255,255,0.15);
@@ -743,7 +743,37 @@ h1, h2, h3, h4 {
 }
 .qn-btn:hover {
   border-color: var(--gold);
-  box-shadow: 0 0 8px rgba(232,163,23,0.4);
+  box-shadow: 0 0 8px rgba(255,210,52,0.4);
+}
+
+/* ── TEAM PHOTO ── */
+.team-photo-wrap {
+  margin-top: 40px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  max-height: 560px;
+}
+.team-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  max-height: 560px;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+/* ── PARKING ── */
+.parking-wrap {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+.parking-wrap img {
+  max-width: 540px;
+  width: 100%;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ── RESPONSIVE ── */
