@@ -68,6 +68,7 @@ function updateCartUI() {
   // Badge
   const badge = document.getElementById('cartBadge');
   if (badge) badge.textContent = totalQty;
+  syncMobBadge(totalQty);
 
   // Drawer items
   const container = document.getElementById('cdItems');
@@ -130,10 +131,81 @@ function toggleMobileNav() {
 // ── Navbar scroll shadow ─────────────────────────────────
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('navbar');
-  if (nav) {
-    nav.classList.toggle('scrolled', window.scrollY > 20);
-  }
+  if (nav) nav.classList.toggle('scrolled', window.scrollY > 20);
+  updateScrollFab();
+  updatePillActive();
 });
+
+// ── Scroll FAB: guides mobile users section-by-section ───
+function scrollFabClick() {
+  const menuEl  = document.getElementById('menu');
+  const aboutEl = document.getElementById('about');
+  const y = window.scrollY + window.innerHeight;
+
+  if (!menuEl) return;
+  const menuBottom = menuEl.offsetTop + menuEl.offsetHeight;
+
+  if (window.scrollY < menuEl.offsetTop - 80) {
+    menuEl.scrollIntoView({ behavior: 'smooth' });
+  } else if (aboutEl && window.scrollY < aboutEl.offsetTop - 80) {
+    aboutEl.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function updateScrollFab() {
+  const fab   = document.getElementById('scrollFab');
+  const label = document.getElementById('scrollFabLabel');
+  if (!fab || !label) return;
+
+  const menuEl  = document.getElementById('menu');
+  const aboutEl = document.getElementById('about');
+
+  if (!menuEl) { fab.classList.add('hidden'); return; }
+
+  const atBottom = (window.scrollY + window.innerHeight) >= document.body.scrollHeight - 80;
+
+  if (atBottom || (aboutEl && window.scrollY >= aboutEl.offsetTop - 80)) {
+    label.textContent = '↑ Back to Top';
+  } else if (window.scrollY >= menuEl.offsetTop - 80) {
+    label.textContent = 'About Us ↓';
+  } else {
+    label.textContent = 'View Menu ↓';
+  }
+
+  // hide FAB near top (hero visible)
+  fab.classList.toggle('hidden', window.scrollY < 100);
+}
+
+// ── Mobile pill bar: highlight active section tab ────────
+function updatePillActive() {
+  const sections = [
+    { id: 'top',   btn: 'mpbHome' },
+    { id: 'menu',  btn: 'mpbMenu' },
+    { id: 'about', btn: 'mpbAbout' },
+  ];
+  const scrollMid = window.scrollY + window.innerHeight / 2;
+  let active = 'mpbHome';
+
+  sections.forEach(({ id, btn }) => {
+    const el = document.getElementById(id);
+    if (el && scrollMid >= el.offsetTop) active = btn;
+  });
+
+  sections.forEach(({ btn }) => {
+    const el = document.getElementById(btn);
+    if (el) el.classList.toggle('active', btn === active);
+  });
+}
+
+// ── Mobile pill bar cart badge sync ──────────────────────
+function syncMobBadge(count) {
+  const b = document.getElementById('mpbBadge');
+  if (!b) return;
+  b.textContent = count;
+  b.classList.toggle('visible', count > 0);
+}
 
 // ── Auto-dismiss flash messages ──────────────────────────
 document.addEventListener('DOMContentLoaded', () => {

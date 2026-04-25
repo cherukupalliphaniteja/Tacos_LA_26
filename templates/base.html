@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}Tacos LA 26{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}"/>
-  <link rel="icon" href="{{ logo_url }}" type="image/webp"/>
+  <link rel="icon" href="{{ logo_url }}" type="image/png"/>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5"/>
 </head>
 <body>
 
@@ -16,12 +16,12 @@
   <div class="nav-inner">
     <a href="{{ url_for('home') }}" class="nav-logo">
       <img src="{{ logo_url }}" alt="Tacos LA 26" class="logo-img"/>
+      <span class="nav-brand-name">TACOS LA 26</span>
     </a>
     <nav class="nav-links" id="navLinks">
       <a href="{{ url_for('home') }}">Home</a>
-      <a href="{{ url_for('menu') }}">Menu</a>
-      <a href="{{ url_for('offers') }}">Offers</a>
-      <a href="{{ url_for('about') }}">About</a>
+      <a href="/#menu">Menu</a>
+      <a href="/#about">About</a>
     </nav>
     <div class="nav-actions">
       {% if current_user.is_authenticated %}
@@ -67,9 +67,8 @@
     <div class="footer-col">
       <h4>Quick Links</h4>
       <a href="{{ url_for('home') }}">Home</a>
-      <a href="{{ url_for('menu') }}">Menu</a>
-      <a href="{{ url_for('offers') }}">Offers</a>
-      <a href="{{ url_for('about') }}">About Us</a>
+      <a href="/#menu">Menu</a>
+      <a href="/#about">About Us</a>
     </div>
     <div class="footer-col">
       <h4>Contact</h4>
@@ -88,14 +87,31 @@
   </div>
 </footer>
 
-<!-- ═══ FLOATING QUICK-NAV ═══ -->
-<nav class="quick-nav" id="quickNav">
-  <a href="{{ url_for('home') }}"  class="qn-btn" title="Home">🏠</a>
-  <a href="{{ url_for('menu') }}"  class="qn-btn" title="Menu">🌮</a>
-  <button class="qn-btn" onclick="toggleCartDrawer()" title="Cart">🛒</button>
-  <a href="{{ url_for('offers') }}" class="qn-btn" title="Offers">🎁</a>
-  <a href="{{ url_for('login') }}"  class="qn-btn" title="Account">👤</a>
+<!-- ═══ MOBILE PILL BAR ═══ -->
+<nav class="mob-pill" id="mobPill">
+  <a href="{{ url_for('home') }}" class="mpb-btn" id="mpbHome">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
+  </a>
+  <a href="/#menu" class="mpb-btn" id="mpbMenu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <span>Menu</span>
+  </a>
+  <button class="mpb-btn mpb-cart-btn" onclick="toggleCartDrawer()">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    <span>Cart</span>
+    <span class="mpb-badge" id="mpbBadge">0</span>
+  </button>
+  <a href="/#about" class="mpb-btn" id="mpbAbout">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>About</span>
+  </a>
 </nav>
+
+<!-- ═══ SCROLL FAB (mobile only) ═══ -->
+<button class="scroll-fab" id="scrollFab" onclick="scrollFabClick()" aria-label="Scroll to next section">
+  <span id="scrollFabLabel">View Menu ↓</span>
+</button>
 
 <!-- ═══ CART DRAWER ═══ -->
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCartDrawer()"></div>
@@ -107,7 +123,7 @@
   <div class="cd-items" id="cdItems">
     <div class="cd-empty">
       <p>Your cart is empty.</p>
-      <a href="{{ url_for('menu') }}" class="btn btn-sm">Browse Menu</a>
+      <a href="/#menu" class="btn btn-sm">Browse Menu</a>
     </div>
   </div>
   <div class="cd-footer" id="cdFooter" style="display:none;">
