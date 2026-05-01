@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — Tacos LA 26{% endblock %}
+{% block content %}
+<section class="error-page">
+  <div class="container">
+    <div class="error-code">404</div>
+    <h1>Page Not Found</h1>
+    <p>Looks like this page went off the grill. Let's get you back.</p>
+    <div class="hero-btns" style="justify-content:center;margin-top:32px;">
+      <a href="{{ url_for('home') }}" class="btn btn-fire">Back to Home</a>
+      <a href="/#menu" class="btn btn-outline">View Menu</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

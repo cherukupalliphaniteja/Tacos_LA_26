@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Something Went Wrong — Tacos LA 26{% endblock %}
+{% block content %}
+<section class="error-page">
+  <div class="container">
+    <div class="error-code">500</div>
+    <h1>Something Went Wrong</h1>
+    <p>We hit a snag on our end. Try again in a moment.</p>
+    <div class="hero-btns" style="justify-content:center;margin-top:32px;">
+      <a href="{{ url_for('home') }}" class="btn btn-fire">Back to Home</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

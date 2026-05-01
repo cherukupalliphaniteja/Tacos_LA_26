@@ -27,6 +27,16 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
+# ── Security headers ───────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"]  = "nosniff"
+    response.headers["X-Frame-Options"]          = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"]         = "1; mode=block"
+    response.headers["Referrer-Policy"]          = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"]       = "geolocation=(), microphone=(), camera=()"
+    return response
+
 # ── Custom Jinja2 filters ──────────────────────────────────
 # (used in templates)
 import json as _json_mod
@@ -748,6 +758,34 @@ def update_order_status():
     return jsonify({"success": True})
 
 
+# ── Robots.txt ────────────────────────────────────────────
+@app.route("/robots.txt")
+def robots_txt():
+    return Response(
+        "User-agent: *\n"
+        "Disallow: /admin\n"
+        "Disallow: /cart\n"
+        "Disallow: /checkout\n"
+        "Disallow: /orders\n"
+        "Disallow: /login\n"
+        "Disallow: /signup\n"
+        "Allow: /\n",
+        mimetype="text/plain",
+    )
+
+
+# ── Error handlers ─────────────────────────────────────────
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    app.logger.error(f"500 error: {e}")
+    return render_template("500.html"), 500
+
+
 # ── Init DB ────────────────────────────────────────────────
 with app.app_context():
     db.create_all()
@@ -764,4 +802,4 @@ with app.app_context():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True)
+    app.run(debug=False, threaded=True)
