@@ -254,8 +254,15 @@ h1, h2, h3, h4 {
   font-family: var(--font-display); font-size: 1.4rem; font-weight: 900;
   border-radius: 50%;
 }
+.step-num svg { display: block; }
 .step-card h4 { font-size: 1.1rem; margin-bottom: 8px; color: var(--white); }
 .step-card p { font-size: 0.9rem; color: rgba(255,255,255,0.55); }
+.footer-social-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.65); font-size: 0.9rem; text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-social-link:hover { color: var(--gold); }
 
 /* ── STORY PREVIEW ── */
 .story-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }

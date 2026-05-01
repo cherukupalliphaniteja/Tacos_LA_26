@@ -142,7 +142,7 @@ MENU_CATEGORIES = [
         "desc": "Crispy grilled cheese tacos loaded with your protein of choice.",
         "base_price": 3.25,
         "img": "/static/images/quesa_tacos.jpeg",
-        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 4,
+        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 6,
         "extras": [],
     },
     {
@@ -150,7 +150,7 @@ MENU_CATEGORIES = [
         "desc": "Melted cheese folded in a fresh tortilla with your protein.",
         "base_price": 10.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-5.png",
-        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 2,
+        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 1,
         "extras": [
             {"id": "extra_queso",  "name": "Extra Queso (Extra Cheese)", "price": 2.00},
             {"id": "frijol",       "name": "Frijol (Beans)",             "price": 1.00},
@@ -175,7 +175,7 @@ MENU_CATEGORIES = [
         "desc": "Oversized flour tortilla packed with rice, beans, protein, and toppings.",
         "base_price": 11.00,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-4.png",
-        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 10,
+        "has_protein": True, "has_toppings": True, "multi_protein": True, "max_qty": 1,
         "extras": [
             {"id": "queso",       "name": "Queso (Cheese)",             "price": 1.00},
             {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 2.00},
@@ -190,7 +190,7 @@ VEGETARIAN_ITEMS = [
         "desc": "Vegetarian burrito with beans and rice.",
         "base_price": 10.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-4.png",
-        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 10,
+        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 1,
         "extras": [
             {"id": "queso",       "name": "Queso (Cheese)",             "price": 1.00},
             {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 2.00},
@@ -201,7 +201,7 @@ VEGETARIAN_ITEMS = [
         "desc": "Vegetarian quesadilla with cheese.",
         "base_price": 9.25,
         "img": "https://tacos-la26.com/wp-content/uploads/2026/02/000001-5.png",
-        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 2,
+        "has_protein": False, "has_toppings": True, "multi_protein": False, "max_qty": 1,
         "extras": [
             {"id": "extra_queso", "name": "Extra Queso (Extra Cheese)", "price": 1.00},
             {"id": "frijol",      "name": "Frijol (Beans)",             "price": 1.00},
