@@ -881,6 +881,56 @@ h1, h2, h3, h4 {
 .error-page h1 { font-size: 2rem; margin-bottom: 12px; }
 .error-page p { color: var(--text-light); margin-bottom: 0; }
 
+/* ── REWARDS / LOYALTY ── */
+.section-chip-gold { color: var(--gold); border-color: var(--gold); }
+.rewards-offer-card {
+  position: relative;
+  max-width: 540px; margin: 0 auto;
+  background: linear-gradient(135deg, rgba(255,210,52,0.10) 0%, rgba(181,69,27,0.08) 100%);
+  border: 2px solid var(--gold);
+  border-radius: 20px;
+  padding: 44px 36px 32px;
+  text-align: center;
+}
+.roc-badge {
+  position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  background: var(--gold); color: #0A0A0A;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+  padding: 4px 22px; border-radius: var(--radius-full); white-space: nowrap;
+}
+.roc-body {
+  display: flex; align-items: center; justify-content: center; gap: 28px;
+  margin: 12px 0 20px; flex-wrap: wrap;
+}
+.roc-spend, .roc-earn { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.roc-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px;
+  color: rgba(255,255,255,0.45);
+}
+.roc-amount {
+  font-family: var(--font-display); font-size: clamp(2.6rem, 6vw, 3.8rem);
+  font-weight: 700; color: var(--white); line-height: 1;
+}
+.roc-arrow { color: var(--gold); flex-shrink: 0; opacity: 0.8; }
+.roc-reward {
+  font-family: var(--font-display); font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 700; color: var(--gold); line-height: 1; text-transform: uppercase;
+}
+.roc-sub { font-size: 0.85rem; color: rgba(255,255,255,0.40); margin-top: 4px; }
+.rewards-cta {
+  display: flex; gap: 16px; justify-content: center; margin-top: 48px; flex-wrap: wrap;
+}
+.rewards-fine-print {
+  text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.28);
+  margin-top: 14px; letter-spacing: 0.5px;
+}
+.rewards-section .section-head.light h3 {
+  font-family: var(--font-display); font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.65);
+  margin-bottom: 32px; margin-top: 0;
+}
+.rewards-section .step-num { font-size: 1.5rem; line-height: 1; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .nav-links { display: none; }

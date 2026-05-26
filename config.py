@@ -11,14 +11,23 @@ class Config:
 
     # ── Database ──────────────────────────────────────────────
     _db_url = os.getenv("DATABASE_URL", "sqlite:///restaurant.db")
-    # Heroku/Render ship postgres:// but SQLAlchemy needs postgresql://
+    # Render/Heroku ship postgres:// but SQLAlchemy needs postgresql://
     if _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Neon is serverless — it cold-starts after idle periods.
+    # pool_pre_ping retests the connection before every use so stale
+    # connections after a cold-start don't cause 500 errors.
+    _is_postgres = _db_url.startswith("postgresql://")
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
+        "pool_size":     5   if _is_postgres else 1,
+        "max_overflow":  10  if _is_postgres else 0,
+        "pool_timeout":  30,
+        "connect_args":  {"sslmode": "require", "connect_timeout": 10}
+                         if _is_postgres else {},
     }
 
     # ── Stripe ────────────────────────────────────────────────
