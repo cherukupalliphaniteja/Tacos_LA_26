@@ -499,6 +499,48 @@ def apply_coupon():
     return jsonify({"success": False, "error": "Invalid coupon code."})
 
 
+# ── API: rewards signup ────────────────────────────────────
+@app.route("/api/rewards-signup", methods=["POST"])
+@limiter.limit("5 per hour")
+def rewards_signup():
+    data  = request.get_json() or {}
+    name  = (data.get("name",  "") or "").strip()
+    email = (data.get("email", "") or "").strip().lower()
+    phone = (data.get("phone", "") or "").strip()
+
+    if not email or not phone:
+        return jsonify({"ok": False, "error": "Email and phone are required."})
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({"ok": False, "error": "Please enter a valid email address."})
+
+    coupon = "TACO10"
+    try:
+        msg = Message(
+            subject="Your Tacos La Rewards Welcome Code — 10% Off",
+            recipients=[email],
+            html=render_template(
+                "email/rewards_welcome.html",
+                customer_name=name or "Taco Fan",
+                coupon_code=coupon,
+            ),
+        )
+        mail.send(msg)
+        rest_email = app.config.get("RESTAURANT_EMAIL")
+        if rest_email:
+            try:
+                mail.send(Message(
+                    subject=f"New Rewards Signup — {name or email}",
+                    recipients=[rest_email],
+                    body=f"Name: {name or 'N/A'}\nEmail: {email}\nPhone: {phone}",
+                ))
+            except Exception:
+                pass
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.error(f"Rewards signup email failed for {email}: {e}")
+        return jsonify({"ok": False, "error": "Could not send email. Please try again."})
+
+
 # ── API: place order (cash / pay-on-arrival) ───────────────
 @app.route("/api/place-order", methods=["POST"])
 @limiter.limit("10 per minute")

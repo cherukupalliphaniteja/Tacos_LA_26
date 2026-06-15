@@ -883,53 +883,69 @@ h1, h2, h3, h4 {
 
 /* ── REWARDS / LOYALTY ── */
 .section-chip-gold { color: var(--gold); border-color: var(--gold); }
-.rewards-offer-card {
-  position: relative;
-  max-width: 540px; margin: 0 auto;
-  background: linear-gradient(135deg, rgba(255,210,52,0.10) 0%, rgba(181,69,27,0.08) 100%);
-  border: 2px solid var(--gold);
-  border-radius: 20px;
-  padding: 44px 36px 32px;
-  text-align: center;
+
+.rewards-rate {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  margin: 0 auto 48px; flex-wrap: wrap;
 }
-.roc-badge {
-  position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-  background: var(--gold); color: #0A0A0A;
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
-  padding: 4px 22px; border-radius: var(--radius-full); white-space: nowrap;
+.rr-eq {
+  font-family: var(--font-display); font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 700; color: var(--white); letter-spacing: 1px; text-transform: uppercase;
 }
-.roc-body {
-  display: flex; align-items: center; justify-content: center; gap: 28px;
-  margin: 12px 0 20px; flex-wrap: wrap;
+.rewards-rate svg { color: var(--gold); flex-shrink: 0; }
+
+/* Tier Cards */
+.rewards-tiers {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; max-width: 540px; margin: 0 auto 56px;
 }
-.roc-spend, .roc-earn { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.roc-label {
-  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px;
-  color: rgba(255,255,255,0.45);
+.rt-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius); padding: 32px 20px; text-align: center;
 }
-.roc-amount {
-  font-family: var(--font-display); font-size: clamp(2.6rem, 6vw, 3.8rem);
-  font-weight: 700; color: var(--white); line-height: 1;
+.rt-card-gold {
+  border-color: var(--gold);
+  background: rgba(255,210,52,0.06);
 }
-.roc-arrow { color: var(--gold); flex-shrink: 0; opacity: 0.8; }
-.roc-reward {
-  font-family: var(--font-display); font-size: clamp(1.5rem, 4vw, 2.2rem);
-  font-weight: 700; color: var(--gold); line-height: 1; text-transform: uppercase;
+.rt-potatoes { font-size: 1.9rem; margin-bottom: 12px; line-height: 1; }
+.rt-pts {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4); margin-bottom: 10px;
 }
-.roc-sub { font-size: 0.85rem; color: rgba(255,255,255,0.40); margin-top: 4px; }
-.rewards-cta {
-  display: flex; gap: 16px; justify-content: center; margin-top: 48px; flex-wrap: wrap;
+.rt-reward {
+  font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 8px;
 }
+.rt-spend { font-size: 0.8rem; color: rgba(255,255,255,0.38); }
+
+/* Welcome Panel */
+.rewards-welcome-panel {
+  max-width: 720px; margin: 0 auto;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,210,52,0.22);
+  border-radius: var(--radius); padding: 36px 32px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start;
+}
+.rwp-text h3 {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+  color: var(--white); text-transform: uppercase; letter-spacing: 1px;
+  margin: 12px 0 10px;
+}
+.rwp-text p { font-size: 0.9rem; color: rgba(255,255,255,0.5); line-height: 1.65; }
+.rwp-text strong { color: var(--gold); font-weight: 600; }
+.rwp-form { display: flex; flex-direction: column; gap: 10px; }
+.rwp-msg {
+  font-size: 0.84rem; padding: 10px 16px;
+  border-radius: var(--radius-sm); margin-top: 4px;
+}
+.rwp-msg.success { background: rgba(122,158,126,0.18); color: #a8d5ac; }
+.rwp-msg.error   { background: rgba(181,69,27,0.20);   color: #f5a98a; }
+
 .rewards-fine-print {
-  text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.28);
-  margin-top: 14px; letter-spacing: 0.5px;
+  text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.25);
+  margin-top: 28px; letter-spacing: 0.4px;
 }
-.rewards-section .section-head.light h3 {
-  font-family: var(--font-display); font-size: clamp(1.2rem, 2.5vw, 1.6rem);
-  text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.65);
-  margin-bottom: 32px; margin-top: 0;
-}
-.rewards-section .step-num { font-size: 1.5rem; line-height: 1; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
@@ -964,4 +980,6 @@ h1, h2, h3, h4 {
   .footer-inner { grid-template-columns: 1fr; }
   .offers-grid { grid-template-columns: 1fr; }
   .hero h1 { font-size: 2.4rem; }
+  .rewards-welcome-panel { grid-template-columns: 1fr; padding: 28px 20px; }
+  .rewards-tiers { grid-template-columns: 1fr; max-width: 320px; }
 }

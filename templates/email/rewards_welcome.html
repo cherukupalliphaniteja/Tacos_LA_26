@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0D0D0D;font-family:'DM Sans',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#111;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#1A1410;border-radius:16px;overflow:hidden;border:1px solid #2E2318;">
+
+      <!-- Header -->
+      <tr>
+        <td style="background:#0A0A0A;padding:32px 40px;text-align:center;border-bottom:3px solid #FFD234;">
+          <img src="https://tacos-la26.com/wp-content/uploads/2024/07/cropped-tacosla26logo.webp"
+               alt="Tacos LA 26" height="56" style="display:block;margin:0 auto 16px;"/>
+          <h1 style="margin:0;color:#FFD234;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:3px;">
+            🥔 Tacos La Rewards
+          </h1>
+        </td>
+      </tr>
+
+      <!-- Hero message -->
+      <tr>
+        <td style="padding:40px 40px 28px;text-align:center;">
+          <p style="margin:0 0 8px;font-size:13px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:2px;">Welcome,</p>
+          <h2 style="margin:0 0 20px;color:#F0E6D3;font-size:28px;font-weight:700;">{{ customer_name }}</h2>
+          <p style="margin:0;color:rgba(240,230,211,0.65);font-size:16px;line-height:1.6;">
+            You're officially part of <strong style="color:#FFD234;">Tacos La Rewards</strong>.<br/>
+            Here's your welcome gift — 10% off your first card order.
+          </p>
+        </td>
+      </tr>
+
+      <!-- Coupon box -->
+      <tr>
+        <td style="padding:8px 40px 36px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#0A0A0A;border:2px dashed #FFD234;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 8px;font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:2px;">Your Code</p>
+                <p style="margin:0 0 12px;font-size:36px;font-weight:700;color:#FFD234;letter-spacing:6px;font-family:monospace;">{{ coupon_code }}</p>
+                <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.45);">10% off &mdash; valid on card purchases only</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- How to use -->
+      <tr>
+        <td style="padding:0 40px 36px;">
+          <p style="margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.4);">How to use</p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #2E2318;font-size:14px;color:rgba(240,230,211,0.7);">
+                <strong style="color:#F0E6D3;">Online order</strong> &mdash; enter code <span style="color:#FFD234;font-family:monospace;">{{ coupon_code }}</span> at checkout
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;font-size:14px;color:rgba(240,230,211,0.7);">
+                <strong style="color:#F0E6D3;">In person</strong> &mdash; show this email at the register when paying by card
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Rewards explainer -->
+      <tr>
+        <td style="background:#0A0A0A;padding:28px 40px;border-top:1px solid #2E2318;">
+          <p style="margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.4);">Your Potato Points</p>
+          <table width="100%" cellpadding="8" cellspacing="0">
+            <tr>
+              <td style="font-size:14px;color:#F0E6D3;padding:8px 12px;background:#1A1410;border-radius:8px 8px 0 0;border-bottom:1px solid #2E2318;">
+                🥔 Spend <strong>$200</strong> on card &rarr; Get <strong style="color:#FFD234;">$10 Off</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:14px;color:#F0E6D3;padding:8px 12px;background:#1A1410;border-radius:0 0 8px 8px;">
+                🥔🥔 Spend <strong>$400</strong> on card &rarr; Get <strong style="color:#FFD234;">$20 Off</strong>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:14px 0 0;font-size:12px;color:rgba(255,255,255,0.3);">Points apply to card purchases only. Tracked via Square Loyalty at the register.</p>
+        </td>
+      </tr>
+
+      <!-- CTA -->
+      <tr>
+        <td style="padding:32px 40px;text-align:center;">
+          <a href="https://tacos-la26.onrender.com/#menu"
+             style="display:inline-block;background:#B5451B;color:#ffffff;font-size:15px;font-weight:700;
+                    padding:14px 36px;border-radius:50px;text-decoration:none;letter-spacing:0.5px;">
+            Order Now &rarr;
+          </a>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="padding:24px 40px;text-align:center;border-top:1px solid #2E2318;">
+          <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.25);">
+            353 S Alameda St &middot; Los Angeles, CA 90013<br/>
+            customerservice@tacos-la26.com<br/>
+            &copy; 2026 Tacos LA 26
+          </p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

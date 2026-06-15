@@ -23,59 +23,51 @@
 <section class="section section-dark rewards-section" id="rewards">
   <div class="container">
     <div class="section-head light">
-      <span class="section-chip section-chip-gold">Loyalty Program</span>
+      <span class="section-chip section-chip-gold">🥔 Potato Points &middot; Card Payments Only</span>
       <h2>Tacos La Rewards</h2>
-      <p>Earn free tacos every time you order.</p>
+      <p>Pay by card and earn Potato Points on every order. The more you spend, the more you save.</p>
     </div>
 
-    <!-- Main Offer Card -->
-    <div class="rewards-offer-card">
-      <div class="roc-badge">Customer Favorite</div>
-      <div class="roc-body">
-        <div class="roc-spend">
-          <span class="roc-label">Spend</span>
-          <span class="roc-amount">$100</span>
-        </div>
-        <div class="roc-arrow">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-        <div class="roc-earn">
-          <span class="roc-label">Get</span>
-          <span class="roc-reward">3 Free Tacos</span>
-        </div>
-      </div>
-      <p class="roc-sub">Join for free &middot; No credit card required</p>
+    <!-- Points explainer -->
+    <div class="rewards-rate">
+      <span class="rr-eq">$1 spent</span>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      <span class="rr-eq">1 🥔 Potato Point</span>
     </div>
 
-    <!-- How It Works -->
-    <div class="section-head light" style="margin-top:60px; margin-bottom:32px;">
-      <h3>How It Works</h3>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">🌮</div>
-        <h4>Sign Up</h4>
-        <p>Join Tacos La Rewards for free — at the register or online. No credit card needed.</p>
+    <!-- Tier Cards -->
+    <div class="rewards-tiers">
+      <div class="rt-card">
+        <div class="rt-potatoes">🥔🥔</div>
+        <div class="rt-pts">200 Potato Points</div>
+        <div class="rt-reward">$10 Off</div>
+        <div class="rt-spend">Spend $200 on card</div>
       </div>
-      <div class="step-card">
-        <div class="step-num">🧾</div>
-        <h4>Spend $100</h4>
-        <p>Every dollar you spend counts. Points add up automatically with every order.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-num">🎉</div>
-        <h4>Get 3 Free Tacos</h4>
-        <p>Redeem your reward on your next visit. Three tacos, on the house — no strings.</p>
+      <div class="rt-card rt-card-gold">
+        <div class="rt-potatoes">🥔🥔🥔🥔</div>
+        <div class="rt-pts">400 Potato Points</div>
+        <div class="rt-reward">$20 Off</div>
+        <div class="rt-spend">Spend $400 on card</div>
       </div>
     </div>
 
-    <!-- CTA Buttons -->
-    <div class="rewards-cta">
-      {# TODO: Replace '#rewards' below with the Square Loyalty signup URL when available #}
-      <a href="#rewards" class="btn btn-fire">Join Rewards</a>
-      <a href="#menu" class="btn btn-outline">Order Now</a>
+    <!-- First-time Welcome Offer -->
+    <div class="rewards-welcome-panel">
+      <div class="rwp-text">
+        <span class="section-chip section-chip-gold" style="font-size:0.7rem;">First Visit Offer</span>
+        <h3>New Here?</h3>
+        <p>Sign up with your email and phone number and we'll send you <strong>10% off your first card order</strong> — straight to your inbox.</p>
+      </div>
+      <form class="rwp-form" id="rewardsForm" onsubmit="submitRewardsSignup(event)">
+        <input type="text"  name="name"  placeholder="Your name (optional)" class="form-input"/>
+        <input type="email" name="email" placeholder="Email address *"       class="form-input" required/>
+        <input type="tel"   name="phone" placeholder="Phone number *"        class="form-input" required/>
+        <button type="submit" class="btn btn-fire btn-block" id="rewardsSubmitBtn">Send My 10% Off Code</button>
+        <p id="rewardsMsg" class="rwp-msg" style="display:none;"></p>
+      </form>
     </div>
-    <p class="rewards-fine-print">Rewards tracked and managed via Square Loyalty POS. Available in-store and on qualifying online orders.</p>
+
+    <p class="rewards-fine-print">Potato Points earned on card purchases only &middot; Managed via Square Loyalty POS &middot; Rewards apply at register on next qualifying card visit</p>
   </div>
 </section>
 

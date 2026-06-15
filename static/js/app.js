@@ -207,6 +207,47 @@ function syncMobBadge(count) {
   b.classList.toggle('visible', count > 0);
 }
 
+// ── Rewards signup form ───────────────────────────────────
+async function submitRewardsSignup(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = document.getElementById('rewardsSubmitBtn');
+  const msg  = document.getElementById('rewardsMsg');
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  msg.style.display = 'none';
+
+  try {
+    const res  = await apiFetch('/api/rewards-signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name:  form.querySelector('[name=name]').value.trim(),
+        email: form.querySelector('[name=email]').value.trim(),
+        phone: form.querySelector('[name=phone]').value.trim(),
+      }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      msg.textContent = '🥔 Code sent! Check your email for 10% off your first card order.';
+      msg.className = 'rwp-msg success';
+      form.reset();
+      btn.textContent = 'Code Sent ✓';
+    } else {
+      msg.textContent = json.error || 'Something went wrong. Please try again.';
+      msg.className = 'rwp-msg error';
+      btn.disabled = false;
+      btn.textContent = 'Send My 10% Off Code';
+    }
+  } catch {
+    msg.textContent = 'Network error. Please try again.';
+    msg.className = 'rwp-msg error';
+    btn.disabled = false;
+    btn.textContent = 'Send My 10% Off Code';
+  }
+  msg.style.display = 'block';
+}
+
 // ── Auto-dismiss flash messages ──────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
