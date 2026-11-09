@@ -63,6 +63,11 @@ limiter     = Limiter(
 )
 
 stripe.api_key = app.config.get("STRIPE_SECRET_KEY", "")
+if stripe.api_key and not app.config.get("STRIPE_WEBHOOK_SECRET"):
+    app.logger.error(
+        "STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is not: card orders "
+        "will never be marked paid. Set the webhook signing secret from the Stripe dashboard."
+    )
 
 
 # ── Models ─────────────────────────────────────────────────
@@ -108,6 +113,17 @@ class Order(db.Model):
     status                = db.Column(db.String(30),  default="received")
     stripe_session_id     = db.Column(db.String(255), nullable=True)
     created_at            = db.Column(db.DateTime,    default=datetime.utcnow)
+
+
+class RewardsSignup(db.Model):
+    __tablename__ = "rewards_signups"
+    id            = db.Column(db.Integer, primary_key=True)
+    name          = db.Column(db.String(120), nullable=True)
+    email         = db.Column(db.String(120), unique=True, nullable=False)
+    phone         = db.Column(db.String(20),  nullable=False)
+    coupon_code   = db.Column(db.String(50),  nullable=True)
+    email_sent    = db.Column(db.Boolean,     default=False, nullable=False)
+    created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
 
 
 @login_manager.user_loader
@@ -247,11 +263,26 @@ BEVERAGES = [
     {"id": "fanta_glass", "name": "Glass Orange Fanta",        "price": 4.00},
 ]
 
+# once_per_customer: one paid/cash order per email (or account) may use it.
+# first_order_only:  only customers with no earlier paid/cash order may use it.
 COUPONS = {
-    "TACO10":  {"type": "percent", "value": 10, "label": "10% off"},
-    "FIRST5":  {"type": "flat",    "value": 5,  "label": "$5 off first order"},
+    "TACO10":  {"type": "percent", "value": 10, "label": "10% off",
+                "once_per_customer": True},
+    "FIRST5":  {"type": "flat",    "value": 5,  "label": "$5 off first order",
+                "once_per_customer": True, "first_order_only": True},
     "LUNCH20": {"type": "percent", "value": 20, "label": "20% off"},
 }
+
+DELIVERY_FEE = 2.99
+
+# Lookup tables used to price orders on the server
+BUILD_ITEMS   = {c["id"]: c for c in MENU_CATEGORIES + VEGETARIAN_ITEMS}
+SIMPLE_ITEMS  = {"side": {s["id"]: s for s in SIDES},
+                 "beverage": {b["id"]: b for b in BEVERAGES}}
+# Cart protein labels look like "Asada x2" (first word of the protein name)
+PROTEIN_BY_LABEL = {p["name"].split(" ")[0].lower(): p for p in PROTEINS}
+TOPPING_BY_ID    = {t["id"]: t for t in TOPPINGS}
+TOPPING_NAMES    = {t["name"] for t in TOPPINGS}
 
 
 # ── Template context ───────────────────────────────────────
@@ -340,30 +371,205 @@ def send_order_emails(order_id):
     t.start()
 
 
-# ── Order builder helper ───────────────────────────────────
+# ── Server-side pricing ────────────────────────────────────
+class OrderError(ValueError):
+    """A problem with the submitted order that the customer should see."""
+
+
+class CouponError(OrderError):
+    """The coupon can't be used; the checkout page drops it so the customer can retry."""
+
+
+def _order_error_response(e):
+    body = {"error": str(e)}
+    if isinstance(e, CouponError):
+        body["coupon_invalid"] = True
+    return jsonify(body), 400
+
+
+def _clean_str(value, limit):
+    return str(value or "").strip()[:limit]
+
+
+def _price_item(raw):
+    """Price one cart line from the menu data. Ignores any price the browser sent."""
+    if not isinstance(raw, dict):
+        raise OrderError("Your cart has an invalid item. Please clear it and try again.")
+    try:
+        qty = int(raw.get("qty", 1))
+    except (TypeError, ValueError):
+        raise OrderError("Invalid quantity in cart.")
+    if qty < 1:
+        raise OrderError("Invalid quantity in cart.")
+    category = raw.get("category")
+    notes    = _clean_str(raw.get("notes"), 300)
+
+    # Sides and drinks
+    if category in SIMPLE_ITEMS:
+        catalog = SIMPLE_ITEMS[category]
+        item = catalog.get(raw.get("item_id"))
+        if not item:   # carts saved before item_id was added: match by name
+            item = next((i for i in catalog.values() if i["name"] == raw.get("name")), None)
+        if not item:
+            raise OrderError(f"{_clean_str(raw.get('name'), 60) or 'An item'} is no longer on the menu. Please remove it from your cart.")
+        if qty > 20:
+            raise OrderError(f"Max 20 {item['name']} per order.")
+        unit = item["price"]
+        return {
+            "category": category, "item_id": item["id"], "name": item["name"],
+            "proteins": [], "toppings": [], "extras": [], "notes": notes,
+            "qty": qty, "unitPrice": round(unit, 2), "lineTotal": round(unit * qty, 2),
+        }
+
+    # Build-your-own items
+    item = BUILD_ITEMS.get(category)
+    if not item:
+        raise OrderError("Your cart has an item that is no longer on the menu. Please remove it.")
+
+    protein_labels, protein_total, protein_cost = [], 0, 0.0
+    if item["has_protein"]:
+        for label in raw.get("proteins") or []:
+            m = re.match(r"^\s*(\S+)\s+x(\d+)\s*$", str(label))
+            protein = PROTEIN_BY_LABEL.get(m.group(1).lower()) if m else None
+            if not protein:
+                raise OrderError(f"Unknown protein in {item['name']}. Please rebuild it.")
+            pqty = int(m.group(2))
+            if pqty < 1:
+                raise OrderError(f"Invalid protein quantity in {item['name']}.")
+            protein_total += pqty
+            protein_cost  += protein["price"] * pqty
+            protein_labels.append(f"{m.group(1)} x{pqty}")
+        if protein_total == 0:
+            raise OrderError(f"Please choose a protein for your {item['name']}.")
+
+    # The kitchen makes one item per protein portion, so bill at least that many.
+    count = max(qty, protein_total)
+    if count > item["max_qty"]:
+        raise OrderError(f"Max {item['max_qty']} {item['name']} per order.")
+
+    toppings = []
+    if item["has_toppings"]:
+        for t in raw.get("toppings") or []:
+            if t in TOPPING_BY_ID:
+                toppings.append(TOPPING_BY_ID[t]["name"])
+            elif t in TOPPING_NAMES:
+                toppings.append(t)
+
+    extras_by_name = {e["name"]: e for e in item["extras"]}
+    extras, extra_cost = [], 0.0
+    for label in raw.get("extras") or []:
+        name  = re.sub(r"\s*\+\$[\d.]+\s*$", "", str(label))
+        extra = extras_by_name.get(name)
+        if not extra:
+            raise OrderError(f"Unknown extra in {item['name']}. Please rebuild it.")
+        extras.append(f"{extra['name']} +${extra['price']:.2f}")
+        extra_cost += extra["price"]
+
+    # Extras apply to every unit; proteins are priced per portion.
+    unit = item["base_price"] + extra_cost
+    line = unit * count + protein_cost
+    return {
+        "category": category, "item_id": item["id"], "name": item["name"],
+        "proteins": protein_labels, "toppings": toppings, "extras": extras,
+        "notes": notes, "qty": count,
+        "unitPrice": round(line / count, 2), "lineTotal": round(line, 2),
+    }
+
+
+def _customer_email(data):
+    if current_user.is_authenticated:
+        return current_user.email.lower()
+    return _clean_str(data.get("email"), 120).lower()
+
+
+def _coupon_error(code, email):
+    """Return an error message if this customer can't use the coupon, else None."""
+    coupon = COUPONS.get(code)
+    if not coupon:
+        return "Invalid coupon code."
+    if not (coupon.get("once_per_customer") or coupon.get("first_order_only")):
+        return None
+    if not email and not current_user.is_authenticated:
+        return None   # can't tell yet; checked again when the order is placed
+
+    who = []
+    if email:
+        who.append(db.func.lower(Order.guest_email) == email)
+        user = User.query.filter_by(email=email).first()
+        if user:
+            who.append(Order.user_id == user.id)
+    if current_user.is_authenticated:
+        who.append(Order.user_id == current_user.id)
+    past = Order.query.filter(db.or_(*who), Order.payment_status.in_(("cash", "paid")))
+
+    if coupon.get("first_order_only") and past.first():
+        return f"{code} is only for your first order."
+    if coupon.get("once_per_customer") and past.filter(Order.coupon_code == code).first():
+        return f"You've already used {code}."
+    return None
+
+
+def _discount_for(code, subtotal):
+    c = COUPONS[code]
+    if c["type"] == "percent":
+        return round(subtotal * c["value"] / 100, 2)
+    return round(min(c["value"], subtotal), 2)
+
+
 def _build_order(data, payment_status="cash"):
-    items        = data.get("items", [])
-    subtotal     = float(data.get("subtotal", 0))
-    discount     = float(data.get("discount", 0))
-    order_type   = data.get("order_type", "pickup")
-    delivery_fee = 2.99 if order_type == "delivery" else 0.0
+    """Build an Order with every price computed on the server."""
+    raw_items = data.get("items") or []
+    if not isinstance(raw_items, list) or not raw_items:
+        raise OrderError("Cart is empty.")
+    if len(raw_items) > 50:
+        raise OrderError("Too many items in one order.")
+
+    items    = [_price_item(i) for i in raw_items]
+    subtotal = round(sum(i["lineTotal"] for i in items), 2)
+
+    # Per-order limits apply across all lines of the same item
+    for cat_id, cat in BUILD_ITEMS.items():
+        n = sum(i["qty"] for i in items if i["category"] == cat_id)
+        if n > cat["max_qty"]:
+            raise OrderError(f"Max {cat['max_qty']} {cat['name']} per order.")
+
+    email = _customer_email(data)
+    if not current_user.is_authenticated:
+        if not _clean_str(data.get("name"), 120):
+            raise OrderError("Please enter your name.")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            raise OrderError("Please enter a valid email address.")
+
+    code     = _clean_str(data.get("coupon_code"), 50).upper()
+    discount = 0.0
+    if code:
+        err = _coupon_error(code, email)
+        if err:
+            raise CouponError(err + " We removed it; please review your total and place the order again.")
+        discount = _discount_for(code, subtotal)
+
+    order_type = "delivery" if data.get("order_type") == "delivery" else "pickup"
+    address    = _clean_str(data.get("address"), 300)
+    if order_type == "delivery" and not address:
+        raise OrderError("Please enter a delivery address.")
+    delivery_fee = DELIVERY_FEE if order_type == "delivery" else 0.0
     total        = round(max(0, subtotal - discount) + delivery_fee, 2)
     order_status = "pending_payment" if payment_status == "pending" else "received"
 
     return Order(
         user_id              = current_user.id if current_user.is_authenticated else None,
-        guest_name           = data.get("name", ""),
-        guest_email          = data.get("email", ""),
-        guest_phone          = data.get("phone", ""),
+        guest_name           = _clean_str(data.get("name"), 120),
+        guest_email          = email,
+        guest_phone          = _clean_str(data.get("phone"), 20),
         items_json           = json.dumps(items),
         subtotal             = subtotal,
         discount             = discount,
         delivery_fee         = delivery_fee,
         total                = total,
         order_type           = order_type,
-        delivery_address     = data.get("address", ""),
-        special_instructions = data.get("instructions", ""),
-        coupon_code          = data.get("coupon_code", ""),
+        delivery_address     = address if order_type == "delivery" else "",
+        special_instructions = _clean_str(data.get("instructions"), 500),
+        coupon_code          = code or None,
         payment_status       = payment_status,
         status               = order_status,
     )
@@ -489,24 +695,34 @@ def orders():
 @app.route("/api/apply-coupon", methods=["POST"])
 @limiter.limit("20 per minute")
 def apply_coupon():
-    data     = request.get_json()
-    code     = (data.get("code", "") or "").strip().upper()
-    subtotal = float(data.get("subtotal", 0))
-    if code in COUPONS:
-        c    = COUPONS[code]
-        disc = round(subtotal * c["value"] / 100, 2) if c["type"] == "percent" else min(c["value"], subtotal)
-        return jsonify({"success": True, "discount": disc, "label": c["label"]})
-    return jsonify({"success": False, "error": "Invalid coupon code."})
+    # The discount shown here is only a preview: it is recomputed from
+    # server-side prices and re-checked when the order is placed.
+    data = request.get_json(silent=True) or {}
+    code = _clean_str(data.get("code"), 50).upper()
+    err  = _coupon_error(code, _customer_email(data))
+    if err:
+        return jsonify({"success": False, "error": err})
+    try:
+        subtotal = sum(_price_item(i)["lineTotal"] for i in (data.get("items") or []))
+    except OrderError:
+        subtotal = 0.0
+    if not subtotal:
+        try:
+            subtotal = max(0.0, float(data.get("subtotal", 0)))
+        except (TypeError, ValueError):
+            subtotal = 0.0
+    c = COUPONS[code]
+    return jsonify({"success": True, "discount": _discount_for(code, subtotal), "label": c["label"]})
 
 
 # ── API: rewards signup ────────────────────────────────────
 @app.route("/api/rewards-signup", methods=["POST"])
 @limiter.limit("5 per hour")
 def rewards_signup():
-    data  = request.get_json() or {}
-    name  = (data.get("name",  "") or "").strip()
-    email = (data.get("email", "") or "").strip().lower()
-    phone = (data.get("phone", "") or "").strip()
+    data  = request.get_json(silent=True) or {}
+    name  = _clean_str(data.get("name"),  120)
+    email = _clean_str(data.get("email"), 120).lower()
+    phone = _clean_str(data.get("phone"), 20)
 
     if not email or not phone:
         return jsonify({"ok": False, "error": "Email and phone are required."})
@@ -514,6 +730,22 @@ def rewards_signup():
         return jsonify({"ok": False, "error": "Please enter a valid email address."})
 
     coupon = "TACO10"
+
+    # Save the signup first so it isn't lost if the email fails
+    signup = RewardsSignup.query.filter_by(email=email).first()
+    if signup:
+        signup.name  = name or signup.name
+        signup.phone = phone
+    else:
+        signup = RewardsSignup(name=name, email=email, phone=phone, coupon_code=coupon)
+        db.session.add(signup)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Could not save rewards signup for {email}: {e}")
+        return jsonify({"ok": False, "error": "Something went wrong. Please try again."})
+
     try:
         msg = Message(
             subject="Your Tacos La Rewards Welcome Code — 10% Off",
@@ -525,6 +757,8 @@ def rewards_signup():
             ),
         )
         mail.send(msg)
+        signup.email_sent = True
+        db.session.commit()
         rest_email = app.config.get("RESTAURANT_EMAIL")
         if rest_email:
             try:
@@ -537,8 +771,9 @@ def rewards_signup():
                 pass
         return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error(f"Rewards signup email failed for {email}: {e}")
-        return jsonify({"ok": False, "error": "Could not send email. Please try again."})
+        db.session.rollback()
+        app.logger.error(f"Rewards signup email failed for {email} (signup saved): {e}")
+        return jsonify({"ok": False, "error": "You're signed up, but we couldn't send the email. Please try again in a few minutes."})
 
 
 # ── API: place order (cash / pay-on-arrival) ───────────────
@@ -546,23 +781,7 @@ def rewards_signup():
 @limiter.limit("10 per minute")
 def place_order():
     try:
-        data  = request.get_json()
-        items = data.get("items", [])
-        if not items:
-            return jsonify({"error": "Cart is empty."}), 400
-
-        # Validate protein quantities per item
-        all_cats = MENU_CATEGORIES + VEGETARIAN_ITEMS
-        for cart_item in items:
-            cat = next((c for c in all_cats if c["id"] == cart_item.get("category")), None)
-            if cat and cat.get("has_protein"):
-                total_prot = 0
-                for p_label in cart_item.get("proteins", []):
-                    m = re.search(r'x(\d+)$', p_label)
-                    total_prot += int(m.group(1)) if m else 1
-                if total_prot > cat["max_qty"]:
-                    return jsonify({"error": f"Max {cat['max_qty']} {cat['name']} per order."}), 400
-
+        data  = request.get_json(silent=True) or {}
         order = _build_order(data, payment_status="cash")
         db.session.add(order)
         db.session.commit()
@@ -574,7 +793,10 @@ def place_order():
             "order_id": order.id,
             "redirect": url_for("success", order_id=order.id),
         })
+    except OrderError as e:
+        return _order_error_response(e)
     except Exception as e:
+        db.session.rollback()
         app.logger.error(f"place_order error: {e}")
         return jsonify({"error": "Something went wrong. Please try again."}), 500
 
@@ -586,29 +808,26 @@ def stripe_checkout():
     if not app.config.get("STRIPE_SECRET_KEY"):
         return jsonify({"error": "Online payment not configured."}), 503
     try:
-        data  = request.get_json()
-        items = data.get("items", [])
-        if not items:
-            return jsonify({"error": "Cart is empty."}), 400
-
-        # Persist order first (pending payment)
+        data  = request.get_json(silent=True) or {}
+        # Persist order first (pending payment); prices come from the server
         order = _build_order(data, payment_status="pending")
         db.session.add(order)
         db.session.commit()
 
-        # Build Stripe line items
+        # One Stripe line per cart line, at the server-computed line total, so
+        # rounding can't make Stripe's total differ from the order total.
         line_items = []
-        for item in items:
-            label = item["name"]
+        for item in json.loads(order.items_json):
+            label = f"{item['qty']}x {item['name']}"
             if item.get("proteins"):
                 label += " (" + ", ".join(item["proteins"]) + ")"
             line_items.append({
                 "price_data": {
                     "currency":     "usd",
-                    "product_data": {"name": label},
-                    "unit_amount":  int(round(item["unitPrice"] * 100)),
+                    "product_data": {"name": label[:250]},
+                    "unit_amount":  int(round(item["lineTotal"] * 100)),
                 },
-                "quantity": item["qty"],
+                "quantity": 1,
             })
 
         if order.delivery_fee > 0:
@@ -646,6 +865,8 @@ def stripe_checkout():
 
         return jsonify({"url": checkout_session.url})
 
+    except OrderError as e:
+        return _order_error_response(e)
     except stripe.error.StripeError as e:
         app.logger.error(f"Stripe error: {e}")
         return jsonify({"error": "Payment service error. Please try again."}), 502
@@ -662,26 +883,37 @@ def stripe_webhook():
     sig_header = request.headers.get("Stripe-Signature", "")
     secret     = app.config.get("STRIPE_WEBHOOK_SECRET", "")
 
+    # Never trust an unsigned event: without the secret anyone could mark
+    # an order as paid by POSTing a fake checkout.session.completed.
+    if not secret:
+        app.logger.error("Stripe webhook received but STRIPE_WEBHOOK_SECRET is not set; rejecting it")
+        return jsonify({"error": "Webhook not configured"}), 503
+
     try:
-        if secret:
-            event = stripe.Webhook.construct_event(payload, sig_header, secret)
-        else:
-            event = json.loads(payload)
+        event = stripe.Webhook.construct_event(payload, sig_header, secret)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         app.logger.warning(f"Webhook signature error: {e}")
         return jsonify({"error": "Invalid payload"}), 400
 
-    if event.get("type") == "checkout.session.completed":
+    if event["type"] == "checkout.session.completed":
         sess_obj = event["data"]["object"]
         order_id = (sess_obj.get("metadata") or {}).get("order_id")
-        if order_id:
+        if order_id and sess_obj.get("payment_status") == "paid":
             order = db.session.get(Order, int(order_id))
-            if order and order.payment_status == "pending":
+            if (order and order.payment_status == "pending"
+                    and order.stripe_session_id == sess_obj.get("id")
+                    and sess_obj.get("amount_total") == int(round(order.total * 100))):
                 order.payment_status = "paid"
                 order.status         = "received"
                 db.session.commit()
                 send_order_emails(order.id)
                 app.logger.info(f"Order #{order.id} payment confirmed via Stripe webhook")
+            elif order and order.payment_status == "pending":
+                app.logger.error(
+                    f"Order #{order.id}: Stripe session {sess_obj.get('id')} paid "
+                    f"{sess_obj.get('amount_total')} cents but order expects "
+                    f"{int(round(order.total * 100))} cents; NOT marked paid, check manually"
+                )
 
     return jsonify({"status": "ok"})
 
@@ -740,8 +972,14 @@ def admin_orders():
 def admin_stream():
     last_id = request.args.get("last_id", 0, type=int)
 
+    # Each open stream holds one gunicorn thread. End it after a few minutes;
+    # the admin page reconnects on its own with the latest order id, so no
+    # orders are missed and stuck connections don't pile up.
+    max_seconds = 300
+
     def generate(last_id):
-        while True:
+        started = time.monotonic()
+        while time.monotonic() - started < max_seconds:
             try:
                 new_orders = Order.query.filter(Order.id > last_id)\
                     .order_by(Order.id).all()
@@ -769,6 +1007,10 @@ def admin_stream():
             except Exception as e:
                 app.logger.error(f"SSE stream error: {e}")
                 yield ": error\n\n"
+            finally:
+                # Give the DB connection back to the pool between polls
+                # instead of holding it open for the life of the stream.
+                db.session.remove()
             time.sleep(3)
 
     resp = Response(
@@ -779,6 +1021,25 @@ def admin_stream():
     resp.headers["X-Accel-Buffering"] = "no"
     resp.headers["Connection"]       = "keep-alive"
     return resp
+
+
+# ── Admin: rewards signups export ──────────────────────────
+@app.route("/admin/rewards-signups.csv")
+@admin_required
+def admin_rewards_csv():
+    import csv, io
+    buf = io.StringIO()
+    w   = csv.writer(buf)
+    w.writerow(["signed_up_utc", "name", "email", "phone", "coupon_code", "email_sent"])
+    for s in RewardsSignup.query.order_by(RewardsSignup.created_at.desc()).all():
+        # Prefix cells starting with = + - @ so Excel doesn't run them as formulas
+        row = [s.created_at.strftime("%Y-%m-%d %H:%M"), s.name or "", s.email,
+               s.phone, s.coupon_code or "", "yes" if s.email_sent else "no"]
+        w.writerow(["'" + v if v[:1] in ("=", "+", "-", "@") else v for v in row])
+    return Response(
+        buf.getvalue(), mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=rewards_signups.csv"},
+    )
 
 
 # ── Admin: update order status ─────────────────────────────

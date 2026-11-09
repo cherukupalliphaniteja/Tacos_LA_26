@@ -116,6 +116,7 @@
   <div class="tb-right">
     <span class="live-dot"></span>
     <span class="live-label" id="connLabel">Live</span>
+    <a href="/admin/rewards-signups.csv" class="logout-btn">Rewards signups (CSV)</a>
     <a href="/admin/logout" class="logout-btn">Logout</a>
   </div>
 </header>
@@ -358,6 +359,8 @@ function connectSSE() {
   src.onmessage = (e) => {
     const o = JSON.parse(e.data);
     lastOrderId = Math.max(lastOrderId, o.id);
+    // Skip orders already on the board (can happen around a reconnect)
+    if (document.querySelector(`.order-card[data-id="${o.id}"]`)) return;
 
     // Remove empty state if present
     const empty = document.getElementById('emptyState');

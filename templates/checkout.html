@@ -177,6 +177,16 @@ function clearCartSession() {
   sessionStorage.removeItem('coupon_code');
 }
 
+// The server re-checks the coupon when the order is placed. If it was
+// rejected, drop it so the summary shows the real total before retrying.
+function handleOrderError(data) {
+  if (data && data.coupon_invalid) {
+    sessionStorage.removeItem('discount');
+    sessionStorage.removeItem('coupon_code');
+    renderCheckoutSummary();
+  }
+}
+
 function placeOrder() {
   const cart = getCart();
   if (!cart.length) { showToast('Your cart is empty.'); return; }
@@ -201,6 +211,7 @@ function placeOrder() {
           clearCartSession();
           window.location.href = data.url;
         } else {
+          handleOrderError(data);
           showToast(data.error || 'Payment error. Please try again.');
           btn.disabled = false;
           btn.textContent = 'Place Order';
@@ -219,6 +230,7 @@ function placeOrder() {
           clearCartSession();
           window.location.href = data.redirect;
         } else {
+          handleOrderError(data);
           showToast(data.error || 'Something went wrong.');
           btn.disabled = false;
           btn.textContent = 'Place Order';

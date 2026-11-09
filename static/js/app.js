@@ -46,6 +46,7 @@ function addSimpleItem(id, name, price, type) {
   };
   const item = {
     uid: id + '_' + Date.now(),
+    item_id: id,
     category: type,
     name: name,
     img: imgMap[type] || '',

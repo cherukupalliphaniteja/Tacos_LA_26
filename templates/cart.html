@@ -99,11 +99,16 @@ function renderSummary() {
 
 function updateCartQty(idx, delta) {
   const cart = getCart();
-  cart[idx].qty = Math.max(1, cart[idx].qty + delta);
+  // An item can't be fewer than its protein portions ("Asada x2" = 2 items)
+  const minQty = Math.max(1, (cart[idx].proteins || []).reduce((s, p) => {
+    const m = /x(\d+)$/.exec(p); return s + (m ? parseInt(m[1]) : 1);
+  }, 0));
+  cart[idx].qty = Math.max(minQty, cart[idx].qty + delta);
   cart[idx].lineTotal = cart[idx].unitPrice * cart[idx].qty;
   saveCart(cart);
   renderCartPage();
   updateCartUI();
+  refreshCoupon();
 }
 
 function removeCartItem(idx) {
@@ -112,18 +117,24 @@ function removeCartItem(idx) {
   saveCart(cart);
   renderCartPage();
   updateCartUI();
+  refreshCoupon();
 }
 
-function applyCoupon() {
-  const code = document.getElementById('couponInput').value.trim();
+// Recompute the discount preview after the cart changes
+function refreshCoupon() {
+  const code = sessionStorage.getItem('coupon_code');
+  if (code) applyCoupon(code);
+}
+
+function applyCoupon(codeArg) {
+  const code = (typeof codeArg === 'string' ? codeArg : document.getElementById('couponInput').value).trim();
   const cart = getCart();
   const subtotal = cart.reduce((s, i) => s + i.lineTotal, 0);
   if (!code) return;
 
-  fetch('/api/apply-coupon', {
+  apiFetch('/api/apply-coupon', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({code, subtotal})
+    body: JSON.stringify({code, subtotal, items: cart})
   })
   .then(r => r.json())
   .then(data => {
@@ -135,11 +146,13 @@ function applyCoupon() {
       msg.className = 'coupon-msg coupon-ok';
     } else {
       sessionStorage.removeItem('discount');
+      sessionStorage.removeItem('coupon_code');
       msg.textContent = data.error;
       msg.className = 'coupon-msg coupon-err';
     }
     renderSummary();
-  });
+  })
+  .catch(() => showToast('Could not check that coupon. Please try again.'));
 }
 </script>
 {% endblock %}

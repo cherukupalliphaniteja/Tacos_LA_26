@@ -198,11 +198,14 @@
       totalProteinQty += pQty;
     });
 
+    let extrasPerItem = 0;
     document.querySelectorAll('.extra-cb:checked').forEach(cb => {
-      extra += parseFloat(cb.dataset.price) || 0;
+      extrasPerItem += parseFloat(cb.dataset.price) || 0;
     });
 
-    const total = BASE * qty + extra;
+    // Must match the server: one item per protein portion, extras on every item
+    const count = Math.max(qty, totalProteinQty);
+    const total = (BASE + extrasPerItem) * count + extra;
     document.getElementById('buildTotal').textContent = '$' + total.toFixed(2);
 
     if (HAS_PROT) {
@@ -273,6 +276,10 @@
     });
 
     let proteinCost = proteins.reduce((s, p) => s + p.price * p.qty, 0);
+    const proteinQty = proteins.reduce((s, p) => s + p.qty, 0);
+    // Must match the server: one item per protein portion, extras on every item
+    const count = Math.max(qty, proteinQty);
+    const lineTotal = (BASE + extraCost) * count + proteinCost;
     const notes = document.getElementById('bNotes').value.trim();
 
     // Format: "Asada x2, Chicken x3"
@@ -287,9 +294,9 @@
       toppings:  toppingsArr,
       extras:    extrasArr,
       notes:     notes,
-      unitPrice: BASE + (proteinCost + extraCost) / Math.max(qty, 1),
-      qty:       qty,
-      lineTotal: BASE * qty + proteinCost + extraCost,
+      unitPrice: lineTotal / count,
+      qty:       count,
+      lineTotal: lineTotal,
     };
 
     addToCart(cartItem);
